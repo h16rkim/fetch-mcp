@@ -77,6 +77,19 @@ To integrate this server with a desktop app, add the following to your app's ser
 }
 ```
 
+```json
+{
+  "fetch": {
+    "command": "npx",
+    "args": [
+      "-y",
+      "@h16rkim/mcp-fetch-server@latest"
+    ],
+    "transport": "stdio"
+  }
+}
+```
+
 ## Features
 
 - Fetches web content using modern fetch API
@@ -89,6 +102,11 @@ To integrate this server with a desktop app, add the following to your app's ser
 
 - Run `npm run dev` to start the TypeScript compiler in watch mode
 - Use `npm test` to run the test suite
+
+
+## Publish
+
+`pnpm publish --access=public`
 
 ## License
 
