@@ -26,93 +26,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
       {
-        name: "fetch_html",
-        description: "Fetch a website and return the content as HTML",
+        name: "fetch",
+        description: "Fetch a website and return the content in the most appropriate format (text, JSON, or HTML)",
         inputSchema: {
           type: "object",
           properties: {
             url: {
               type: "string",
               description: "URL of the website to fetch",
-            },
-            headers: {
-              type: "object",
-              description: "Optional headers to include in the request",
-            },
-            max_length: {
-              type: "number",
-              description: "Maximum number of characters to return (default: 5000)",
-            },
-            start_index: {
-              type: "number",
-              description: "Start content from this character index (default: 0)",
-            },
-          },
-          required: ["url"],
-        },
-      },
-      {
-        name: "fetch_markdown",
-        description: "Fetch a website and return the content as Markdown",
-        inputSchema: {
-          type: "object",
-          properties: {
-            url: {
-              type: "string",
-              description: "URL of the website to fetch",
-            },
-            headers: {
-              type: "object",
-              description: "Optional headers to include in the request",
-            },
-            max_length: {
-              type: "number",
-              description: "Maximum number of characters to return (default: 5000)",
-            },
-            start_index: {
-              type: "number",
-              description: "Start content from this character index (default: 0)",
-            },
-          },
-          required: ["url"],
-        },
-      },
-      {
-        name: "fetch_txt",
-        description:
-          "Fetch a website, return the content as plain text (no HTML)",
-        inputSchema: {
-          type: "object",
-          properties: {
-            url: {
-              type: "string",
-              description: "URL of the website to fetch",
-            },
-            headers: {
-              type: "object",
-              description: "Optional headers to include in the request",
-            },
-            max_length: {
-              type: "number",
-              description: "Maximum number of characters to return (default: 5000)",
-            },
-            start_index: {
-              type: "number",
-              description: "Start content from this character index (default: 0)",
-            },
-          },
-          required: ["url"],
-        },
-      },
-      {
-        name: "fetch_json",
-        description: "Fetch a JSON file from a URL",
-        inputSchema: {
-          type: "object",
-          properties: {
-            url: {
-              type: "string",
-              description: "URL of the JSON to fetch",
             },
             headers: {
               type: "object",
@@ -139,22 +60,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   const validatedArgs = RequestPayloadSchema.parse(args);
 
-  if (request.params.name === "fetch_html") {
-    const fetchResult = await Fetcher.html(validatedArgs);
-    return fetchResult;
+  if (request.params.name === "fetch") {
+    const fetchResult = await Fetcher.doFetch(validatedArgs);
+    return {
+      content: fetchResult.content,
+      isError: fetchResult.isError,
+    };
   }
-  if (request.params.name === "fetch_json") {
-    const fetchResult = await Fetcher.json(validatedArgs);
-    return fetchResult;
-  }
-  if (request.params.name === "fetch_txt") {
-    const fetchResult = await Fetcher.txt(validatedArgs);
-    return fetchResult;
-  }
-  if (request.params.name === "fetch_markdown") {
-    const fetchResult = await Fetcher.markdown(validatedArgs);
-    return fetchResult;
-  }
+  
   throw new Error("Tool not found");
 });
 

@@ -2,7 +2,7 @@
 
 ![fetch mcp logo](logo.jpg)
 
-This MCP server provides functionality to fetch web content in various formats, including HTML, JSON, plain text, and Markdown.
+This MCP server provides functionality to fetch web content and automatically return it in the most appropriate format (plain text, JSON, or HTML).
 
 <a href="https://glama.ai/mcp/servers/nu09wf23ao">
   <img width="380" height="200" src="https://glama.ai/mcp/servers/nu09wf23ao/badge" alt="Fetch Server MCP server" />
@@ -12,33 +12,17 @@ This MCP server provides functionality to fetch web content in various formats, 
 
 ### Tools
 
-- **fetch_html**
-  - Fetch a website and return the content as HTML
+- **fetch**
+  - Fetch a website and return the content in the most appropriate format
   - Input:
     - `url` (string, required): URL of the website to fetch
     - `headers` (object, optional): Custom headers to include in the request
-  - Returns the raw HTML content of the webpage
-
-- **fetch_json**
-  - Fetch a JSON file from a URL
-  - Input:
-    - `url` (string, required): URL of the JSON to fetch
-    - `headers` (object, optional): Custom headers to include in the request
-  - Returns the parsed JSON content
-
-- **fetch_txt**
-  - Fetch a website and return the content as plain text (no HTML)
-  - Input:
-    - `url` (string, required): URL of the website to fetch
-    - `headers` (object, optional): Custom headers to include in the request
-  - Returns the text content of the webpage with HTML tags, scripts, and styles removed
-
-- **fetch_markdown**
-  - Fetch a website and return the content as Markdown
-  - Input:
-    - `url` (string, required): URL of the website to fetch
-    - `headers` (object, optional): Custom headers to include in the request
-  - Returns the content of the webpage converted to Markdown format
+    - `max_length` (number, optional): Maximum number of characters to return (default: 5000)
+    - `start_index` (number, optional): Start content from this character index (default: 0)
+  - Returns content in the best available format:
+    1. First attempts to return as plain text (HTML tags, scripts, and styles removed)
+    2. If that fails, attempts to return as JSON
+    3. Falls back to raw HTML if other formats fail
 
 ### Resources
 
@@ -94,9 +78,9 @@ To integrate this server with a desktop app, add the following to your app's ser
 
 - Fetches web content using modern fetch API
 - Supports custom headers for requests
-- Provides content in multiple formats: HTML, JSON, plain text, and Markdown
+- Automatically detects and returns content in the most appropriate format
 - Uses JSDOM for HTML parsing and text extraction
-- Uses TurndownService for HTML to Markdown conversion
+- Intelligent fallback system: text → JSON → HTML
 
 ## Development
 
