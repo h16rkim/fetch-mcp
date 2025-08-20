@@ -42,8 +42,6 @@ export class Fetcher {
       );
     }
 
-    const hostHeader = headers?.["Host"];
-
     const response = await fetch(url, {
       headers: {
         ...headers,
@@ -51,7 +49,7 @@ export class Fetcher {
         "Cache-Control" : "no-cache",
         "Connection": "close",
         // 일부 사이트(ex. Anthropic)에서는, Host 헤더의 첫 글자가 소문자여야지 대화 내용을 차단하지 않음
-        ...(hostHeader ? { "host": hostHeader } : {}),
+        "host": new URL(url).host,
       },
     });
 
