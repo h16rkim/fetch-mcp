@@ -1,6 +1,6 @@
 {
   "name": "@h16rkim/mcp-fetch-server",
-  "version": "1.0.5",
+  "version": "1.0.4",
   "description": "",
   "type": "module",
   "main": "dist/index.js",
