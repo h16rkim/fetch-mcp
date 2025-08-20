@@ -48,8 +48,8 @@ export class Fetcher {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
         "Cache-Control" : "no-cache",
         "Connection": "close",
-        // 일부 사이트(ex. Anthropic)에서는, Host 헤더의 첫 글자가 소문자여야지 대화 내용을 차단하지 않음
-        "host": new URL(url).host,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        "Pragma": "no-cache",
       },
     });
 
