@@ -1,6 +1,5 @@
 import { JSDOM } from "jsdom";
 import is_ip_private from "private-ip";
-import { got, Response } from "got";
 import { RequestPayload } from "./types.js";
 
 interface FetchResult {
@@ -31,7 +30,7 @@ export class Fetcher {
   /**
    * Validate URL and perform HTTP request
    */
-  private static async performHttpRequest(requestPayload: RequestPayload): Promise<Response<string>> {
+  private static async performHttpRequest(requestPayload: RequestPayload): Promise<Response> {
     const { url, headers } = requestPayload;
 
     // Security check for private IPs
@@ -43,17 +42,20 @@ export class Fetcher {
       );
     }
 
-    const response = await got(url, {
+    const response = await fetch(url, {
+      mode: "no-cors",
       headers: {
-        ...headers,
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
-        "Cache-Control": "no-cache",
+        "Cache-Control" : "no-cache",
+        "Connection": "close",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        "Pragma": "no-cache",
       },
-      throwHttpErrors: true,
-      timeout: {
-        request: 10000
-      }
     });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error: ${response.status}`);
+    }
 
     return response;
   }
@@ -63,9 +65,9 @@ export class Fetcher {
    */
   private static async processAsText(
     requestPayload: RequestPayload, 
-    response: Response<string>
+    response: Response
   ): Promise<FetchResult> {
-    const htmlContent = response.body;
+    const htmlContent = await response.text();
     const dom = new JSDOM(htmlContent);
     const document = dom.window.document;
 
@@ -93,9 +95,9 @@ export class Fetcher {
    */
   private static async processAsJson(
     requestPayload: RequestPayload, 
-    response: Response<string>
+    response: Response
   ): Promise<FetchResult> {
-    const jsonData = JSON.parse(response.body);
+    const jsonData = await response.json();
     const jsonString = JSON.stringify(jsonData);
     
     const processedJson = this.applyLengthLimits(
@@ -115,9 +117,9 @@ export class Fetcher {
    */
   private static async processAsHtml(
     requestPayload: RequestPayload, 
-    response: Response<string>
+    response: Response
   ): Promise<FetchResult> {
-    const htmlContent = response.body;
+    const htmlContent = await response.text();
     
     const processedHtml = this.applyLengthLimits(
       htmlContent,
@@ -143,9 +145,9 @@ export class Fetcher {
    * Try to process response in a specific format, return null if it fails
    */
   private static async tryProcessFormat(
-    processor: (payload: RequestPayload, response: Response<string>) => Promise<FetchResult>,
+    processor: (payload: RequestPayload, response: Response) => Promise<FetchResult>,
     requestPayload: RequestPayload,
-    response: Response<string>
+    response: Response
   ): Promise<FetchResult | null> {
     try {
       return await processor(requestPayload, response);
@@ -179,7 +181,7 @@ export class Fetcher {
       const textResult = await this.tryProcessFormat(
         this.processAsText.bind(this),
         requestPayload,
-        response
+        response.clone()
       );
       if (textResult) return textResult;
 
@@ -187,7 +189,7 @@ export class Fetcher {
       const jsonResult = await this.tryProcessFormat(
         this.processAsJson.bind(this),
         requestPayload,
-        response
+        response.clone()
       );
       if (jsonResult) return jsonResult;
 
