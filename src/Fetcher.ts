@@ -1,5 +1,4 @@
 import { JSDOM } from "jsdom";
-import TurndownService from "turndown";
 import is_ip_private from "private-ip";
 import { RequestPayload } from "./types.js";
 
@@ -11,8 +10,6 @@ interface FetchResult {
 export class Fetcher {
   private static readonly DEFAULT_MAX_LENGTH = 5000;
   private static readonly DEFAULT_START_INDEX = 0;
-  private static readonly DEFAULT_USER_AGENT = 
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
   /**
    * Apply length limits to text content
@@ -47,7 +44,9 @@ export class Fetcher {
 
     const response = await fetch(url, {
       headers: {
-        "User-Agent": this.DEFAULT_USER_AGENT,
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+        "Cache-Control" : "no-cache",
+        "Connection": "close",
         ...headers,
       },
     });
