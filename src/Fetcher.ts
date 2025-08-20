@@ -42,16 +42,12 @@ export class Fetcher {
       );
     }
 
-    const hostHeader = headers?.["Host"];
-
     const response = await fetch(url, {
       headers: {
-        ...headers,
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
         "Cache-Control" : "no-cache",
         "Connection": "close",
-        // 일부 사이트(ex. Anthropic)에서는, Host 헤더의 첫 글자가 소문자여야지 대화 내용을 차단하지 않음
-        ...(hostHeader ? { "host": hostHeader } : {}),
+        ...headers,
       },
     });
 
