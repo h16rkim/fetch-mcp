@@ -87,7 +87,7 @@ export class AtlassianFetcher {
       }
       
       const pageId = pageIdMatch[1];
-      const apiUrl = `${domain}/wiki/rest/api/content/${pageId}?expand=body.storage,version,space`;
+      const apiUrl = `${domain}/wiki/rest/api/content/${pageId}?expand=body.export_view,version,space`;
 
       const response = await fetch(apiUrl, {
         headers: {
@@ -114,7 +114,7 @@ export class AtlassianFetcher {
       const spaceKey = data.space?.key || "Unknown space";
       const spaceName = data.space?.name || "Unknown space name";
       const authorName = data.version?.by?.publicName || "Unknown author";
-      const htmlContent = data.body?.storage?.value || "No content";
+      const htmlContent = data.body?.export_view?.value || "No content";
 
       // Convert HTML to plain text
       const dom = new JSDOM(htmlContent);
