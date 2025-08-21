@@ -6,7 +6,7 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { RequestPayloadSchema, ConfluenceRequestSchema, JiraRequestSchema } from "./types.js";
+import { RequestPayloadSchema, ConfluenceRequestSchema } from "./types.js";
 import { Fetcher } from "./Fetcher.js";
 import { AtlassianFetcher } from "./AtlassianFetcher.js";
 
@@ -54,31 +54,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: "fetch_confluence_page",
-        description: "Fetch Confluence page content using Atlassian API. Requires ATLASSIAN_API_TOKEN environment variable.",
+        description: "Fetch Confluence page content using Atlassian API. Requires ATLASSIAN_USER and ATLASSIAN_API_TOKEN environment variables.",
         inputSchema: {
           type: "object",
           properties: {
             url: {
               type: "string",
               description: "Confluence page URL (e.g., https://your-domain.atlassian.net/wiki/spaces/SPACE/pages/123456/Page+Title)",
-            },
-            maxLength: {
-              type: "number",
-              description: "Maximum number of characters to return (default: 5000)",
-            },
-          },
-          required: ["url"],
-        },
-      },
-      {
-        name: "fetch_jira_issue",
-        description: "Fetch JIRA issue details using Atlassian API. Requires ATLASSIAN_API_TOKEN environment variable.",
-        inputSchema: {
-          type: "object",
-          properties: {
-            url: {
-              type: "string",
-              description: "JIRA issue URL (e.g., https://your-domain.atlassian.net/browse/PROJ-123)",
             },
             maxLength: {
               type: "number",
@@ -110,15 +92,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     return {
       content: confluenceResult.content,
       isError: confluenceResult.isError,
-    };
-  }
-
-  if (request.params.name === "fetch_jira_issue") {
-    const validatedArgs = JiraRequestSchema.parse(args);
-    const jiraResult = await AtlassianFetcher.fetchJiraIssue(validatedArgs);
-    return {
-      content: jiraResult.content,
-      isError: jiraResult.isError,
     };
   }
   

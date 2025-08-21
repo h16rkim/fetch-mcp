@@ -25,14 +25,3 @@ export type ConfluenceRequest = {
   url: string;
   maxLength?: number;
 };
-
-// JIRA tool schema - now uses URL instead of separate issueKey and baseUrl
-export const JiraRequestSchema = z.object({
-  url: z.string().url(),
-  maxLength: z.number().int().min(1).optional().default(5000),
-});
-
-export type JiraRequest = {
-  url: string;
-  maxLength?: number;
-};
