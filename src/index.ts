@@ -6,8 +6,9 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { RequestPayloadSchema } from "./types.js";
+import { RequestPayloadSchema, ConfluenceRequestSchema, JiraRequestSchema } from "./types.js";
 import { Fetcher } from "./Fetcher.js";
+import { AtlassianFetcher } from "./AtlassianFetcher.js";
 
 const server = new Server(
   {
@@ -51,6 +52,42 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ["url"],
         },
       },
+      {
+        name: "fetch_confluence_page",
+        description: "Fetch Confluence page content using Atlassian API. Requires ATLASSIAN_API_TOKEN environment variable.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            url: {
+              type: "string",
+              description: "Confluence page URL (e.g., https://your-domain.atlassian.net/wiki/spaces/SPACE/pages/123456/Page+Title)",
+            },
+            maxLength: {
+              type: "number",
+              description: "Maximum number of characters to return (default: 5000)",
+            },
+          },
+          required: ["url"],
+        },
+      },
+      {
+        name: "fetch_jira_issue",
+        description: "Fetch JIRA issue details using Atlassian API. Requires ATLASSIAN_API_TOKEN environment variable.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            url: {
+              type: "string",
+              description: "JIRA issue URL (e.g., https://your-domain.atlassian.net/browse/PROJ-123)",
+            },
+            maxLength: {
+              type: "number",
+              description: "Maximum number of characters to return (default: 5000)",
+            },
+          },
+          required: ["url"],
+        },
+      },
     ],
   };
 });
@@ -58,13 +95,30 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
-  const validatedArgs = RequestPayloadSchema.parse(args);
-
   if (request.params.name === "fetch") {
+    const validatedArgs = RequestPayloadSchema.parse(args);
     const fetchResult = await Fetcher.doFetch(validatedArgs);
     return {
       content: fetchResult.content,
       isError: fetchResult.isError,
+    };
+  }
+
+  if (request.params.name === "fetch_confluence_page") {
+    const validatedArgs = ConfluenceRequestSchema.parse(args);
+    const confluenceResult = await AtlassianFetcher.fetchConfluencePage(validatedArgs);
+    return {
+      content: confluenceResult.content,
+      isError: confluenceResult.isError,
+    };
+  }
+
+  if (request.params.name === "fetch_jira_issue") {
+    const validatedArgs = JiraRequestSchema.parse(args);
+    const jiraResult = await AtlassianFetcher.fetchJiraIssue(validatedArgs);
+    return {
+      content: jiraResult.content,
+      isError: jiraResult.isError,
     };
   }
   
