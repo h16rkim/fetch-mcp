@@ -6,7 +6,7 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { RequestPayloadSchema, ConfluenceRequestSchema } from "./types.js";
+import { validateRequestPayload, validateConfluenceRequest } from "./validate.js";
 import { Fetcher } from "./Fetcher.js";
 import { AtlassianFetcher } from "./AtlassianFetcher.js";
 
@@ -78,7 +78,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
   if (request.params.name === "fetch") {
-    const validatedArgs = RequestPayloadSchema.parse(args);
+    const validatedArgs = validateRequestPayload(args);
     const fetchResult = await Fetcher.doFetch(validatedArgs);
     return {
       content: fetchResult.content,
@@ -87,7 +87,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 
   if (request.params.name === "fetch_confluence_page") {
-    const validatedArgs = ConfluenceRequestSchema.parse(args);
+    const validatedArgs = validateConfluenceRequest(args);
     const confluenceResult = await AtlassianFetcher.fetchConfluencePage(validatedArgs);
     return {
       content: confluenceResult.content,
