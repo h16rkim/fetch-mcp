@@ -71,8 +71,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
       },
       {
-        name: "fetch_jira_ticket",
-        description: "Fetch Jira ticket information using Atlassian API. Requires ATLASSIAN_USER and ATLASSIAN_API_TOKEN environment variables.",
+        name: "fetch_jira_issue",
+        description: "Fetch Jira issue ticket information using Atlassian API. Requires ATLASSIAN_USER and ATLASSIAN_API_TOKEN environment variables.",
         inputSchema: {
           type: "object",
           properties: {
