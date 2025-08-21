@@ -6,7 +6,7 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { validateRequestPayload, validateConfluenceRequest } from "./validate.js";
+import { validateRequestPayload, validateConfluenceRequest, validateJiraRequest } from "./validate.js";
 import { Fetcher } from "./Fetcher.js";
 import { AtlassianFetcher } from "./AtlassianFetcher.js";
 
@@ -70,6 +70,24 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ["url"],
         },
       },
+      {
+        name: "fetch_jira_ticket",
+        description: "Fetch Jira ticket information using Atlassian API. Requires ATLASSIAN_USER and ATLASSIAN_API_TOKEN environment variables.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            url: {
+              type: "string",
+              description: "Jira ticket URL (e.g., https://your-domain.atlassian.net/browse/TICKET-123)",
+            },
+            maxLength: {
+              type: "number",
+              description: "Maximum number of characters to return (default: 5000)",
+            },
+          },
+          required: ["url"],
+        },
+      },
     ],
   };
 });
@@ -92,6 +110,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     return {
       content: confluenceResult.content,
       isError: confluenceResult.isError,
+    };
+  }
+
+  if (request.params.name === "fetch_jira_ticket") {
+    const validatedArgs = validateJiraRequest(args);
+    const jiraResult = await AtlassianFetcher.fetchJiraTicket(validatedArgs);
+    return {
+      content: jiraResult.content,
+      isError: jiraResult.isError,
     };
   }
   

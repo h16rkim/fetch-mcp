@@ -1,4 +1,4 @@
-import { RequestPayload, ConfluenceRequest } from "./types.js";
+import { RequestPayload, ConfluenceRequest, JiraRequest } from "./types.js";
 
 // Base validation function that can be curried for optional validation
 function validateObject(args: any, fieldName: string = 'arguments'): void {
@@ -82,6 +82,18 @@ export function validateRequestPayload(args: any): RequestPayload {
 }
 
 export function validateConfluenceRequest(args: any): ConfluenceRequest {
+  validateObject(args);
+  
+  const url = validateRequiredString(args.url, 'url');
+  validateUrl(url);
+  
+  return {
+    url,
+    maxLength: withDefault(validateOptionalPositiveNumber(args.maxLength, 'maxLength'), 5000),
+  };
+}
+
+export function validateJiraRequest(args: any): JiraRequest {
   validateObject(args);
   
   const url = validateRequiredString(args.url, 'url');
