@@ -9,6 +9,7 @@ import {
 import { validateRequestPayload, validateConfluenceRequest, validateJiraRequest } from "./validate.js";
 import { Fetcher } from "./Fetcher.js";
 import { AtlassianFetcher } from "./AtlassianFetcher.js";
+import { Constants } from "./constants.js";
 
 const server = new Server(
   {
@@ -27,7 +28,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
       {
-        name: "fetch",
+        name: Constants.FETCH,
         description: "Fetch a website and return the content in the most appropriate format (text, JSON, or HTML)",
         inputSchema: {
           type: "object",
@@ -42,18 +43,18 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
             max_length: {
               type: "number",
-              description: "Maximum number of characters to return (default: 5000)",
+              description: `Maximum number of characters to return (default: ${Constants.DEFAULT_MAX_LENGTH})`,
             },
             start_index: {
               type: "number",
-              description: "Start content from this character index (default: 0)",
+              description: `Start content from this character index (default: ${Constants.DEFAULT_START_INDEX})`,
             },
           },
           required: ["url"],
         },
       },
       {
-        name: "fetch_confluence_page",
+        name: Constants.FETCH_CONFLUENCE_PAGE,
         description: "Fetch Confluence page content using Atlassian API. Requires ATLASSIAN_USER and ATLASSIAN_API_TOKEN environment variables.",
         inputSchema: {
           type: "object",
@@ -64,14 +65,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
             maxLength: {
               type: "number",
-              description: "Maximum number of characters to return (default: 5000)",
+              description: `Maximum number of characters to return (default: ${Constants.DEFAULT_MAX_LENGTH})`,
             },
           },
           required: ["url"],
         },
       },
       {
-        name: "fetch_jira_issue",
+        name: Constants.FETCH_JIRA_ISSUE,
         description: "Fetch Jira issue ticket information using Atlassian API. Requires ATLASSIAN_USER and ATLASSIAN_API_TOKEN environment variables.",
         inputSchema: {
           type: "object",
@@ -82,7 +83,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
             maxLength: {
               type: "number",
-              description: "Maximum number of characters to return (default: 5000)",
+              description: `Maximum number of characters to return (default: ${Constants.DEFAULT_MAX_LENGTH})`,
             },
           },
           required: ["url"],
@@ -95,7 +96,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
-  if (request.params.name === "fetch") {
+  if (request.params.name === Constants.FETCH) {
     const validatedArgs = validateRequestPayload(args);
     const fetchResult = await Fetcher.doFetch(validatedArgs);
     return {
@@ -104,7 +105,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     };
   }
 
-  if (request.params.name === "fetch_confluence_page") {
+  if (request.params.name === Constants.FETCH_CONFLUENCE_PAGE) {
     const validatedArgs = validateConfluenceRequest(args);
     const confluenceResult = await AtlassianFetcher.fetchConfluencePage(validatedArgs);
     return {
@@ -113,7 +114,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     };
   }
 
-  if (request.params.name === "fetch_jira_ticket") {
+  if (request.params.name === Constants.FETCH_JIRA_ISSUE) {
     const validatedArgs = validateJiraRequest(args);
     const jiraResult = await AtlassianFetcher.fetchJiraTicket(validatedArgs);
     return {

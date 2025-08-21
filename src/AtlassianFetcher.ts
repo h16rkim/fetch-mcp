@@ -1,5 +1,6 @@
 import { JSDOM } from "jsdom";
 import { ConfluenceRequest, JiraRequest } from "./types.js";
+import { Constants } from "./constants.js";
 
 interface AtlassianResult {
   content: Array<{ type: "text"; text: string }>;
@@ -7,7 +8,7 @@ interface AtlassianResult {
 }
 
 export class AtlassianFetcher {
-  private static readonly DEFAULT_MAX_LENGTH = 5000;
+  private static readonly DEFAULT_MAX_LENGTH = Constants.DEFAULT_MAX_LENGTH;
 
   /**
    * Get Atlassian credentials from environment variables

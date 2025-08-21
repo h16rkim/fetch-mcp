@@ -1,4 +1,5 @@
 import { RequestPayload, ConfluenceRequest, JiraRequest } from "./types.js";
+import { Constants } from "./constants.js";
 
 // Base validation function that can be curried for optional validation
 function validateObject(args: any, fieldName: string = 'arguments'): void {
@@ -76,8 +77,8 @@ export function validateRequestPayload(args: any): RequestPayload {
   return {
     url,
     headers: validateOptionalObject(args.headers, 'headers'),
-    max_length: withDefault(validateOptionalPositiveNumber(args.max_length, 'max_length'), 5000),
-    start_index: withDefault(validateOptionalNonNegativeNumber(args.start_index, 'start_index'), 0),
+    max_length: withDefault(validateOptionalPositiveNumber(args.max_length, 'max_length'), Constants.DEFAULT_MAX_LENGTH),
+    start_index: withDefault(validateOptionalNonNegativeNumber(args.start_index, 'start_index'), Constants.DEFAULT_START_INDEX),
   };
 }
 
@@ -89,7 +90,7 @@ export function validateConfluenceRequest(args: any): ConfluenceRequest {
   
   return {
     url,
-    maxLength: withDefault(validateOptionalPositiveNumber(args.maxLength, 'maxLength'), 5000),
+    maxLength: withDefault(validateOptionalPositiveNumber(args.maxLength, 'maxLength'), Constants.DEFAULT_MAX_LENGTH),
   };
 }
 
@@ -101,6 +102,6 @@ export function validateJiraRequest(args: any): JiraRequest {
   
   return {
     url,
-    maxLength: withDefault(validateOptionalPositiveNumber(args.maxLength, 'maxLength'), 5000),
+    maxLength: withDefault(validateOptionalPositiveNumber(args.maxLength, 'maxLength'), Constants.DEFAULT_MAX_LENGTH),
   };
 }

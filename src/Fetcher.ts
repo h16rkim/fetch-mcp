@@ -1,6 +1,7 @@
 import { JSDOM } from "jsdom";
 import is_ip_private from "private-ip";
 import { RequestPayload } from "./types.js";
+import { Constants } from "./constants.js";
 
 interface FetchResult {
   content: Array<{ type: "text"; text: string }>;
@@ -8,8 +9,8 @@ interface FetchResult {
 }
 
 export class Fetcher {
-  private static readonly DEFAULT_MAX_LENGTH = 5000;
-  private static readonly DEFAULT_START_INDEX = 0;
+  private static readonly DEFAULT_MAX_LENGTH = Constants.DEFAULT_MAX_LENGTH;
+  private static readonly DEFAULT_START_INDEX = Constants.DEFAULT_START_INDEX;
 
   /**
    * Apply length limits to text content
