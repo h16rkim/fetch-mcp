@@ -72,13 +72,12 @@ src/
 
 - **환경변수명도 상수로 관리**
   ```typescript
-  static readonly ENV_SLACK_TOKEN = "SLACK_REFRESH_TOKEN";
-  static readonly ENV_SLACK_CLIENT_ID = "SLACK_CLIENT_ID";
-  static readonly ENV_SLACK_CLIENT_SECRET = "SLACK_CLIENT_SECRET";
+  static readonly ENV_SLACK_APP_USER_OAUTH_TOKEN = "SLACK_APP_USER_OAUTH_TOKEN";
   static readonly ENV_ATLASSIAN_USER = "ATLASSIAN_USER";
+  static readonly ENV_ATLASSIAN_API_TOKEN = "ATLASSIAN_API_TOKEN";
   
   // 사용
-  const token = process.env[Constants.ENV_SLACK_TOKEN];
+  const token = process.env[Constants.ENV_SLACK_APP_USER_OAUTH_TOKEN];
   ```
 
 #### ❌ 피해야 할 것
@@ -118,8 +117,18 @@ src/
   }
   ```
 
-- **토큰 캐싱 및 자동 갱신 로직**
+- **토큰 관리 (필요시)**
   ```typescript
+  // 단순한 토큰 기반 인증 (Slack 예시)
+  private static getAccessToken(): string {
+    const token = process.env[Constants.ENV_SERVICE_TOKEN];
+    if (!token) {
+      throw new Error(`${Constants.ENV_SERVICE_TOKEN} environment variable is not set`);
+    }
+    return token;
+  }
+  
+  // 복잡한 토큰 캐싱이 필요한 경우 (OAuth refresh 등)
   private static cachedTokens: TokenCache | null = null;
   
   private static isTokenValid(): boolean {
@@ -250,16 +259,15 @@ src/
     throw new Error(`${Constants.ENV_SERVICE_TOKEN} environment variable is not set`);
   }
   
-  // OAuth 자격증명 관리
-  private static getOAuthCredentials(): { clientId: string; clientSecret: string } {
-    const clientId = process.env[Constants.ENV_CLIENT_ID];
-    const clientSecret = process.env[Constants.ENV_CLIENT_SECRET];
+  // 단순한 토큰 기반 인증
+  private static getAccessToken(): string {
+    const token = process.env[Constants.ENV_SLACK_APP_USER_OAUTH_TOKEN];
     
-    if (!clientId || !clientSecret) {
-      throw new Error("OAuth credentials not configured");
+    if (!token) {
+      throw new Error(`${Constants.ENV_SLACK_APP_USER_OAUTH_TOKEN} environment variable is not set`);
     }
     
-    return { clientId, clientSecret };
+    return token;
   }
   ```
 

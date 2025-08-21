@@ -1,6 +1,5 @@
 import { 
   SlackRequest, 
-  SlackOAuthResponse, 
   SlackConversationsHistoryResponse, 
   SlackConversationsRepliesResponse, 
   SlackUsersInfoResponse,
@@ -15,112 +14,20 @@ interface SlackResult {
   isError: boolean;
 }
 
-interface SlackTokens {
-  accessToken: string;
-  expiresAt: number;
-}
-
 export class SlackFetcher {
   private static readonly DEFAULT_MAX_LENGTH = Constants.DEFAULT_MAX_LENGTH;
-  private static cachedTokens: SlackTokens | null = null;
 
   /**
-   * Get Slack refresh token from environment variables
+   * Get Slack user OAuth token from environment variables
    */
-  private static getRefreshToken(): string {
-    const refreshToken = process.env[Constants.ENV_SLACK_REFRESH_TOKEN];
+  private static getAccessToken(): string {
+    const token = process.env[Constants.ENV_SLACK_APP_USER_OAUTH_TOKEN];
     
-    if (!refreshToken) {
-      throw new Error(`${Constants.ENV_SLACK_REFRESH_TOKEN} environment variable is not set`);
+    if (!token) {
+      throw new Error(`${Constants.ENV_SLACK_APP_USER_OAUTH_TOKEN} environment variable is not set`);
     }
     
-    return refreshToken;
-  }
-
-  /**
-   * Get Slack OAuth credentials from environment variables
-   */
-  private static getOAuthCredentials(): { clientId: string; clientSecret: string } {
-    const clientId = process.env[Constants.ENV_SLACK_CLIENT_ID];
-    const clientSecret = process.env[Constants.ENV_SLACK_CLIENT_SECRET];
-    
-    if (!clientId) {
-      throw new Error(`${Constants.ENV_SLACK_CLIENT_ID} environment variable is not set`);
-    }
-    
-    if (!clientSecret) {
-      throw new Error(`${Constants.ENV_SLACK_CLIENT_SECRET} environment variable is not set`);
-    }
-    
-    return { clientId, clientSecret };
-  }
-
-  /**
-   * Check if current access token is valid
-   */
-  private static isAccessTokenValid(): boolean {
-    if (!this.cachedTokens) {
-      return false;
-    }
-    
-    // Check if token expires within next 5 minutes
-    const fiveMinutesFromNow = Date.now() + (5 * 60 * 1000);
-    return this.cachedTokens.expiresAt > fiveMinutesFromNow;
-  }
-
-  /**
-   * Get new access token using refresh token
-   */
-  private static async refreshAccessToken(): Promise<string> {
-    const refreshToken = this.getRefreshToken();
-    const { clientId, clientSecret } = this.getOAuthCredentials();
-    
-    const response = await fetch('https://slack.com/api/oauth.v2.access', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        grant_type: 'refresh_token',
-        refresh_token: refreshToken,
-        client_id: clientId,
-        client_secret: clientSecret,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to refresh Slack token: ${response.status} ${response.statusText}`);
-    }
-
-    const data: SlackOAuthResponse = await response.json();
-    
-    if (!data.ok) {
-      throw new Error(`Slack API error: ${data.error || 'Unknown error'}`);
-    }
-
-    if (!data.access_token) {
-      throw new Error('No access token received from Slack API');
-    }
-
-    // Cache the new token (assuming 12 hours expiry if not provided)
-    const expiresIn = data.expires_in || 43200; // 12 hours default
-    this.cachedTokens = {
-      accessToken: data.access_token,
-      expiresAt: Date.now() + (expiresIn * 1000),
-    };
-
-    return data.access_token;
-  }
-
-  /**
-   * Get valid access token (cached or refreshed)
-   */
-  private static async getAccessToken(): Promise<string> {
-    if (this.isAccessTokenValid()) {
-      return this.cachedTokens!.accessToken;
-    }
-    
-    return await this.refreshAccessToken();
+    return token;
   }
 
   /**
@@ -320,7 +227,7 @@ export class SlackFetcher {
    */
   static async fetchSlackMessage(request: SlackRequest): Promise<SlackResult> {
     try {
-      const accessToken = await this.getAccessToken();
+      const accessToken = this.getAccessToken();
       const { channel, timestamp } = this.parseSlackUrl(request.url);
       
       // Get message information
@@ -333,7 +240,7 @@ export class SlackFetcher {
 
       if (!response.ok) {
         if (response.status === 401) {
-          return this.createErrorResult("Authentication failed. Please check your SLACK_REFRESH_TOKEN");
+          return this.createErrorResult("Authentication failed. Please check your SLACK_APP_USER_OAUTH_TOKEN");
         }
         return this.createErrorResult(`HTTP error: ${response.status} ${response.statusText}`);
       }

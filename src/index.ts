@@ -92,7 +92,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: Constants.FETCH_SLACK_MESSAGE,
-        description: "Fetch Slack message information using Slack Web API. Requires SLACK_REFRESH_TOKEN, SLACK_CLIENT_ID, and SLACK_CLIENT_SECRET environment variables.",
+        description: "Fetch Slack message information using Slack Web API. Requires SLACK_APP_USER_OAUTH_TOKEN environment variable.",
         inputSchema: {
           type: "object",
           properties: {
