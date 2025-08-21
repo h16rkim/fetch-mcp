@@ -14,14 +14,14 @@ export class AtlassianFetcher {
    * Get Atlassian credentials from environment variables
    */
   private static getCredentials(): { user: string; token: string } {
-    const user = process.env.ATLASSIAN_USER;
-    const token = process.env.ATLASSIAN_API_TOKEN;
+    const user = process.env[Constants.ENV_ATLASSIAN_USER];
+    const token = process.env[Constants.ENV_ATLASSIAN_API_TOKEN];
     
     if (!user) {
-      throw new Error("ATLASSIAN_USER environment variable is not set");
+      throw new Error(`${Constants.ENV_ATLASSIAN_USER} environment variable is not set`);
     }
     if (!token) {
-      throw new Error("ATLASSIAN_API_TOKEN environment variable is not set");
+      throw new Error(`${Constants.ENV_ATLASSIAN_API_TOKEN} environment variable is not set`);
     }
     
     return { user, token };

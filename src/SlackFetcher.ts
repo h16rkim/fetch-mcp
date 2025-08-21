@@ -28,13 +28,31 @@ export class SlackFetcher {
    * Get Slack refresh token from environment variables
    */
   private static getRefreshToken(): string {
-    const refreshToken = process.env.SLACK_REFRESH_TOKEN;
+    const refreshToken = process.env[Constants.ENV_SLACK_REFRESH_TOKEN];
     
     if (!refreshToken) {
-      throw new Error("SLACK_REFRESH_TOKEN environment variable is not set");
+      throw new Error(`${Constants.ENV_SLACK_REFRESH_TOKEN} environment variable is not set`);
     }
     
     return refreshToken;
+  }
+
+  /**
+   * Get Slack OAuth credentials from environment variables
+   */
+  private static getOAuthCredentials(): { clientId: string; clientSecret: string } {
+    const clientId = process.env[Constants.ENV_SLACK_CLIENT_ID];
+    const clientSecret = process.env[Constants.ENV_SLACK_CLIENT_SECRET];
+    
+    if (!clientId) {
+      throw new Error(`${Constants.ENV_SLACK_CLIENT_ID} environment variable is not set`);
+    }
+    
+    if (!clientSecret) {
+      throw new Error(`${Constants.ENV_SLACK_CLIENT_SECRET} environment variable is not set`);
+    }
+    
+    return { clientId, clientSecret };
   }
 
   /**
@@ -55,6 +73,7 @@ export class SlackFetcher {
    */
   private static async refreshAccessToken(): Promise<string> {
     const refreshToken = this.getRefreshToken();
+    const { clientId, clientSecret } = this.getOAuthCredentials();
     
     const response = await fetch('https://slack.com/api/oauth.v2.access', {
       method: 'POST',
@@ -64,6 +83,8 @@ export class SlackFetcher {
       body: new URLSearchParams({
         grant_type: 'refresh_token',
         refresh_token: refreshToken,
+        client_id: clientId,
+        client_secret: clientSecret,
       }),
     });
 

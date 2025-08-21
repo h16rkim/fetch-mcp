@@ -8,4 +8,11 @@ export class Constants {
   // Default values
   static readonly DEFAULT_MAX_LENGTH = 5000;
   static readonly DEFAULT_START_INDEX = 0;
+  
+  // Environment variable names
+  static readonly ENV_SLACK_REFRESH_TOKEN = "SLACK_REFRESH_TOKEN";
+  static readonly ENV_SLACK_CLIENT_ID = "SLACK_CLIENT_ID";
+  static readonly ENV_SLACK_CLIENT_SECRET = "SLACK_CLIENT_SECRET";
+  static readonly ENV_ATLASSIAN_USER = "ATLASSIAN_USER";
+  static readonly ENV_ATLASSIAN_API_TOKEN = "ATLASSIAN_API_TOKEN";
 }

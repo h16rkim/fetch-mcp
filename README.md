@@ -82,17 +82,20 @@ To create an API token:
 2. Click "Create API token"
 3. Give it a label and copy the generated token
 
-For Slack services, you need to set up a refresh token:
+For Slack services, you need to set up OAuth credentials:
 
 ```bash
 export SLACK_REFRESH_TOKEN="your-slack-refresh-token"
+export SLACK_CLIENT_ID="your-slack-client-id"
+export SLACK_CLIENT_SECRET="your-slack-client-secret"
 ```
 
-To get a Slack refresh token:
+To get Slack OAuth credentials:
 1. Create a Slack app at https://api.slack.com/apps
 2. Configure OAuth & Permissions with required scopes (channels:history, users:read)
-3. Install the app to your workspace
-4. Use the OAuth flow to get a refresh token
+3. Note down your Client ID and Client Secret from "Basic Information" page
+4. Install the app to your workspace
+5. Use the OAuth flow to get a refresh token
 
 ### Usage
 
