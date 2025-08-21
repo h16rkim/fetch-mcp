@@ -2,7 +2,7 @@
 
 ![fetch mcp logo](logo.jpg)
 
-This MCP server provides functionality to fetch web content and automatically return it in the most appropriate format (plain text, JSON, or HTML). It also supports fetching content from Atlassian services like Confluence and Jira.
+This MCP server provides functionality to fetch web content and automatically return it in the most appropriate format (plain text, JSON, or HTML). It also supports fetching content from Atlassian services like Confluence and Jira, as well as Slack messages.
 
 <a href="https://glama.ai/mcp/servers/nu09wf23ao">
   <img width="380" height="200" src="https://glama.ai/mcp/servers/nu09wf23ao/badge" alt="Fetch Server MCP server" />
@@ -45,6 +45,19 @@ This MCP server provides functionality to fetch web content and automatically re
     - Subtasks (if available)
     - Recent comments (if available)
 
+- **fetch_slack_message**
+  - Fetch Slack message information using Slack Web API
+  - Requires `SLACK_REFRESH_TOKEN` environment variable
+  - Input:
+    - `url` (string, required): Slack message URL (e.g., https://your-workspace.slack.com/archives/CHANNEL_ID/pTIMESTAMP)
+    - `maxLength` (number, optional): Maximum number of characters to return (default: 5000)
+  - Returns comprehensive message information including:
+    - Message author, content, and timestamp
+    - Thread replies (if available)
+    - Emoji reactions (if available)
+    - File attachments (if available)
+  - Automatically manages access token refresh using the provided refresh token
+
 ### Resources
 
 This server does not provide any persistent resources. It's designed to fetch and transform web content on demand.
@@ -68,6 +81,18 @@ To create an API token:
 1. Go to https://id.atlassian.com/manage-profile/security/api-tokens
 2. Click "Create API token"
 3. Give it a label and copy the generated token
+
+For Slack services, you need to set up a refresh token:
+
+```bash
+export SLACK_REFRESH_TOKEN="your-slack-refresh-token"
+```
+
+To get a Slack refresh token:
+1. Create a Slack app at https://api.slack.com/apps
+2. Configure OAuth & Permissions with required scopes (channels:history, users:read)
+3. Install the app to your workspace
+4. Use the OAuth flow to get a refresh token
 
 ### Usage
 
@@ -118,7 +143,9 @@ To integrate this server with a desktop app, add the following to your app's ser
 - Intelligent fallback system: text → JSON → HTML
 - Atlassian Confluence page content extraction
 - Jira ticket information retrieval with comprehensive details
+- Slack message fetching with thread replies, reactions, and attachments
 - Support for Atlassian Document Format (ADF) content parsing
+- Automatic Slack access token management and refresh
 
 ## Development
 

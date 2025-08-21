@@ -3,6 +3,7 @@ export class Constants {
   static readonly FETCH = "fetch";
   static readonly FETCH_CONFLUENCE_PAGE = "fetch_confluence_page";
   static readonly FETCH_JIRA_ISSUE = "fetch_jira_issue";
+  static readonly FETCH_SLACK_MESSAGE = "fetch_slack_message";
   
   // Default values
   static readonly DEFAULT_MAX_LENGTH = 5000;

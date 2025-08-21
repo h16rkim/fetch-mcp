@@ -6,9 +6,10 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { validateRequestPayload, validateConfluenceRequest, validateJiraRequest } from "./validate.js";
+import { validateRequestPayload, validateConfluenceRequest, validateJiraRequest, validateSlackRequest } from "./validate.js";
 import { Fetcher } from "./Fetcher.js";
 import { AtlassianFetcher } from "./AtlassianFetcher.js";
+import { SlackFetcher } from "./SlackFetcher.js";
 import { Constants } from "./constants.js";
 
 const server = new Server(
@@ -89,6 +90,24 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ["url"],
         },
       },
+      {
+        name: Constants.FETCH_SLACK_MESSAGE,
+        description: "Fetch Slack message information using Slack Web API. Requires SLACK_REFRESH_TOKEN environment variable.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            url: {
+              type: "string",
+              description: "Slack message URL (e.g., https://your-workspace.slack.com/archives/CHANNEL_ID/pTIMESTAMP)",
+            },
+            maxLength: {
+              type: "number",
+              description: `Maximum number of characters to return (default: ${Constants.DEFAULT_MAX_LENGTH})`,
+            },
+          },
+          required: ["url"],
+        },
+      },
     ],
   };
 });
@@ -120,6 +139,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     return {
       content: jiraResult.content,
       isError: jiraResult.isError,
+    };
+  }
+
+  if (request.params.name === Constants.FETCH_SLACK_MESSAGE) {
+    const validatedArgs = validateSlackRequest(args);
+    const slackResult = await SlackFetcher.fetchSlackMessage(validatedArgs);
+    return {
+      content: slackResult.content,
+      isError: slackResult.isError,
     };
   }
   

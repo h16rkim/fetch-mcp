@@ -1,4 +1,4 @@
-import { RequestPayload, ConfluenceRequest, JiraRequest } from "./types.js";
+import { RequestPayload, ConfluenceRequest, JiraRequest, SlackRequest } from "./types.js";
 import { Constants } from "./constants.js";
 
 // Base validation function that can be curried for optional validation
@@ -95,6 +95,18 @@ export function validateConfluenceRequest(args: any): ConfluenceRequest {
 }
 
 export function validateJiraRequest(args: any): JiraRequest {
+  validateObject(args);
+  
+  const url = validateRequiredString(args.url, 'url');
+  validateUrl(url);
+  
+  return {
+    url,
+    maxLength: withDefault(validateOptionalPositiveNumber(args.maxLength, 'maxLength'), Constants.DEFAULT_MAX_LENGTH),
+  };
+}
+
+export function validateSlackRequest(args: any): SlackRequest {
   validateObject(args);
   
   const url = validateRequiredString(args.url, 'url');
