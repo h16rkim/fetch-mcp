@@ -19,12 +19,12 @@ Before writing any code, you must first review the reference documents and estab
 You MUST always check the appropriate sections in the AGENTS.md file before writing or modifying code.
 
 **File Type Mapping:**
-- If you are creating or editing **Interface definitions** (files matching `*Types.ts`), check sections 1, 2, and 7 (Interface vs Class 설계 원칙, 파일 구조화 및 모듈 분리, 타입 안전성 강화).
-- If you are creating or editing **Model classes** (files under `*/model/*.ts`), check sections 1, 3, 6, and 11 (Interface vs Class 설계 원칙, 생성자 설계 및 객체 생성 패턴, 데이터 접근 패턴, 모듈 분리 및 파일 구조화).
-- If you are creating or editing **Fetcher classes** (files matching `*Fetcher.ts`), check sections 4, 5, 8, and 12 (변수 선언 및 제어 흐름, 결과 타입 통합 및 표준화, 성능 및 메모리 최적화, 결과 타입 통합 및 표준화).
-- If you are creating or editing **Validation logic** (`validate.ts`), check sections 7 and 10 (타입 안전성 강화, 테스트 용이성).
-- If you are creating or editing **Main server logic** (`index.ts`), check sections 5 and 12 (결과 타입 통합 및 표준화, 결과 타입 통합 및 표준화).
-- If you are adding **New service integration**, follow the complete workflow in section "새로운 Tool 추가 시 체크리스트".
+- If you are creating or editing **Interface definitions** (files matching `*Types.ts`), check sections 1, 2, and 7 (Interface vs Class Design Principles, File Structure and Module Separation, Type Safety Enhancement).
+- If you are creating or editing **Model classes** (files under `*/model/*.ts`), check sections 1, 3, 6, and 11 (Interface vs Class Design Principles, Constructor Design and Object Creation Patterns, Data Access Patterns, Module Separation & File Organization).
+- If you are creating or editing **Fetcher classes** (files matching `*Fetcher.ts`), check sections 4, 5, 8, and 12 (Variable Declaration and Control Flow, Result Type Unification and Standardization, Performance and Memory Optimization, Result Type Unification and Standardization).
+- If you are creating or editing **Validation logic** (`validate.ts`), check sections 7 and 10 (Type Safety Enhancement, Testability).
+- If you are creating or editing **Main server logic** (`index.ts`), check sections 5 and 12 (Result Type Unification and Standardization, Result Type Unification and Standardization).
+- If you are adding **New service integration**, follow the complete workflow in section "New Tool Addition Checklist".
 
 ### 2. Code Generation and Verification Workflow (Mandatory Workflow)
 
@@ -64,12 +64,12 @@ Lint and Format
 </Name>
 
 <Description>
-Check the code against style guides and format it consistently using Prettier.
-This step ensures consistent code formatting across the project.
+Check the code against style guides and format it consistently.
+Note: This project doesn't have explicit linting setup, so this step verifies the build output and code structure.
 </Description>
 
 <Command>
-npm run format
+npm run build && echo "Code structure verification completed"
 </Command>
 
 <Prerequisite>Step 1 (TypeScript Compile) must complete successfully.</Prerequisite>
@@ -194,7 +194,7 @@ After successfully completing all verification steps and architecture compliance
 
 4. **Documentation Standards**
    - Use concrete examples from the actual work performed
-   - Include both "✅ 해야 할 것" and "❌ 피해야 할 것" sections
+   - Include both "✅ What to Do" and "❌ What to Avoid" sections
    - Provide TypeScript code examples that match the project's patterns
    - Reference actual file names and structures from the project
    - Update version numbers and timestamps
@@ -202,7 +202,7 @@ After successfully completing all verification steps and architecture compliance
 **Required Updates:**
 - **AGENTS.md**: Add any new architectural patterns, coding conventions, or lessons learned
 - **README.md**: Update project structure, features, or guidelines if they changed
-- **Version Info**: Update "마지막 업데이트" timestamp and increment version if needed
+- **Version Info**: Update "Last Updated" timestamp and increment version if needed
 
 This documentation update ensures that future development work can benefit from the lessons learned in the current session and maintains the project's knowledge base.
 
@@ -220,23 +220,23 @@ This documentation update ensures that future development work can benefit from 
 
 ## Project-Specific Lesson Integration
 
-### 최근 작업에서 얻은 교훈 (2025-08-22)
+### Recent Work Lessons (2025-08-22)
 
-**목표:**
-- 현재까지 작업한 내용들에서 얻을 수 있는 교훈을 AGENTS.md 파일에 갱신
-- README.md 파일에도 수정할 부분이 있다면 수정
+**Objective:**
+- Update AGENTS.md file with lessons learned from current work
+- Update README.md file if there are parts that need modification
 
-**핵심 학습 내용:**
-1. **모듈 분리의 중요성**: 1000+ 줄의 거대한 파일을 개별 모델 파일로 분리하여 유지보수성 크게 향상
-2. **직접 Import 패턴**: Re-export 레이어 제거로 명확한 의존성 관리와 Tree-shaking 최적화 달성
-3. **Interface-Class 패턴**: "I" prefix 인터페이스와 비즈니스 로직을 담은 클래스의 명확한 분리
-4. **결과 타입 통합**: 모든 Fetcher에서 `McpResult` 사용으로 일관된 에러 처리 및 응답 형식 확보
-5. **타입 안전성**: 강력한 TypeScript 타입 시스템 활용으로 런타임 에러 방지
+**Key Learning Points:**
+1. **Importance of Module Separation**: Breaking down 1000+ line monolithic files into individual model files greatly improved maintainability
+2. **Direct Import Pattern**: Removing re-export layers achieved clear dependency management and tree-shaking optimization
+3. **Interface-Class Pattern**: Clear separation between "I" prefix interfaces and business logic-containing classes
+4. **Result Type Unification**: Using `McpResult` across all Fetchers ensured consistent error handling and response formats
+5. **Type Safety**: Leveraging strong TypeScript type system to prevent runtime errors
 
-이러한 교훈들은 향후 새로운 서비스 추가나 기존 코드 개선 시 반드시 적용되어야 하는 핵심 원칙들입니다.
+These lessons are core principles that must be applied when adding new services or improving existing code in the future.
 
 ---
 
-**마지막 업데이트**: 2025-08-22  
-**작성자**: AI Assistant  
-**버전**: 2.1
+**Last Updated**: 2025-08-22  
+**Author**: AI Assistant  
+**Version**: 2.1

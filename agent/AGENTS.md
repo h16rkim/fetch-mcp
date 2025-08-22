@@ -1,18 +1,18 @@
 # Fetch MCP Server - Agent Development Guidelines
 
-## 📋 프로젝트 개요
+## 📋 Project Overview
 
-이 프로젝트는 웹 콘텐츠 및 다양한 서비스(Atlassian Confluence/Jira, Slack)에서 정보를 조회할 수 있는 MCP(Model Context Protocol) 서버입니다.
+This project is an MCP (Model Context Protocol) server that can fetch information from web content and various services (Atlassian Confluence/Jira, Slack).
 
-## 🏗️ 현재 아키텍처
+## 🏗️ Current Architecture
 
-### 파일 구조
+### File Structure
 ```
 src/
-├── slack/                   # Slack 관련 파일들
-│   ├── SlackTypes.ts       # Slack 타입 정의 (I prefix)
-│   ├── SlackFetcher.ts     # Slack API 처리
-│   └── model/              # Slack 모델 클래스들 (개별 파일)
+├── slack/                   # Slack-related files
+│   ├── SlackTypes.ts       # Slack type definitions (I prefix)
+│   ├── SlackFetcher.ts     # Slack API processing
+│   └── model/              # Slack model classes (individual files)
 │       ├── SlackUser.ts
 │       ├── SlackReaction.ts
 │       ├── SlackAttachment.ts
@@ -22,80 +22,80 @@ src/
 │       ├── SlackConversationsHistoryResponse.ts
 │       ├── SlackConversationsRepliesResponse.ts
 │       └── SlackUsersInfoResponse.ts
-├── atlassian/              # Atlassian 관련 파일들
-│   ├── AtlassianTypes.ts   # Atlassian 타입 정의 (I prefix)
-│   ├── AtlassianFetcher.ts # Atlassian API 처리
-│   └── model/              # Atlassian 모델 클래스들 (개별 파일)
+├── atlassian/              # Atlassian-related files
+│   ├── AtlassianTypes.ts   # Atlassian type definitions (I prefix)
+│   ├── AtlassianFetcher.ts # Atlassian API processing
+│   └── model/              # Atlassian model classes (individual files)
 │       ├── ConfluencePage.ts
 │       └── JiraTicket.ts
-├── types.ts                # 공통 타입 정의 (IMcpResult)
-├── McpModels.ts           # MCP 결과 모델 (McpResult)
-├── constants.ts           # 상수 정의 (tool 이름, 기본값)
-├── validate.ts            # 입력 검증 로직
-├── ResponseBuilder.ts     # 응답 빌더
-├── Fetcher.ts            # 일반 웹 콘텐츠 조회
-└── index.ts              # 메인 서버 및 tool 등록
+├── types.ts                # Common type definitions (IMcpResult)
+├── McpModels.ts           # MCP result model (McpResult)
+├── constants.ts           # Constants definition (tool names, defaults)
+├── validate.ts            # Input validation logic
+├── ResponseBuilder.ts     # Response builder
+├── Fetcher.ts            # General web content fetching
+└── index.ts              # Main server and tool registration
 ```
 
-### 현재 구현된 Tools
-1. **fetch**: 일반 웹사이트 콘텐츠 조회
-2. **fetch_confluence_page**: Confluence 페이지 조회
-3. **fetch_jira_issue**: Jira 티켓 조회  
-4. **fetch_slack_message**: Slack 메시지 조회
+### Currently Implemented Tools
+1. **fetch**: General website content fetching
+2. **fetch_confluence_page**: Confluence page fetching
+3. **fetch_jira_issue**: Jira ticket fetching  
+4. **fetch_slack_message**: Slack message fetching
 
-## 🤖 AI Agent 작업 가이드
+## 🤖 AI Agent Work Guide
 
-### 필수 참고 문서
+### Required Reference Documents
 
-AI Agent가 이 프로젝트에서 작업을 수행할 때는 **반드시** 다음 문서를 먼저 읽고 작업해야 합니다:
+When AI Agent performs work in this project, it **must** first read the following documents:
 
 #### 📋 [agent/rules/agent-workflow.md](./rules/agent-workflow.md)
-- **AI Agent Workflow**: 코드 작성부터 검증까지의 전체 워크플로우
-- **Verification Loop**: TypeScript 컴파일, 린트, 수동 리뷰 단계
-- **Error Handling**: 에러 발생 시 처리 방법 및 반복 규칙
-- **Architecture Compliance**: 프로젝트 특화 패턴 준수 체크
-- **Documentation Update**: 작업 완료 후 문서 업데이트 절차
+- **AI Agent Workflow**: Complete workflow from code writing to verification
+- **Verification Loop**: TypeScript compilation, linting, manual review steps
+- **Error Handling**: Error handling methods and iteration rules
+- **Architecture Compliance**: Project-specific pattern compliance checks
+- **Documentation Update**: Documentation update procedures after work completion
 
-### 작업 전 체크리스트
+### Pre-work Checklist
 
-1. ✅ **agent-workflow.md 문서 숙지**: 전체 워크플로우 이해
-2. ✅ **AGENTS.md 코딩 컨벤션 확인**: 해당 파일 타입별 규칙 검토
-3. ✅ **기존 코드 패턴 분석**: 유사한 기존 코드 구조 참고
-4. ✅ **아키텍처 준수**: Interface-Class 패턴, 직접 Import 등
+1. ✅ **Study agent-workflow.md document**: Understand the complete workflow
+2. ✅ **Check AGENTS.md coding conventions**: Review rules for relevant file types
+3. ✅ **Analyze existing code patterns**: Reference similar existing code structures
+4. ✅ **Follow architecture**: Interface-Class pattern, direct imports, etc.
 
-### 주요 원칙
+### Key Principles
 
-- **Interface-Class Pattern**: "I" prefix 인터페이스 + 비즈니스 로직 클래스
-- **Individual Model Files**: 각 모델을 개별 파일로 분리
-- **Direct Import Pattern**: re-export 레이어 없이 직접 import
-- **McpResult Consistency**: 모든 Fetcher에서 통일된 결과 타입 사용
-- **Documentation First**: 작업 완료 후 반드시 문서 업데이트
+- **Interface-Class Pattern**: "I" prefix interfaces + business logic classes
+- **Individual Model Files**: Separate each model into individual files
+- **Direct Import Pattern**: Direct imports without re-export layers
+- **McpResult Consistency**: Use unified result types across all Fetchers
+- **Documentation First**: Always update documentation after work completion
 
 
-## 🎯 코딩 컨벤션 및 아키텍처 교훈 (2025-08-22 업데이트)
+## 🎯 Coding Conventions and Architecture Lessons (2025-08-22 Update)
 
-### 1. Interface vs Class 설계 원칙
+### 1. Interface vs Class Design Principles
 
-#### ✅ 해야 할 것
-- **Interface는 "I" prefix 사용**
+#### ✅ What to Do
+- **Use "I" prefix for Interfaces**
   ```typescript
-  // Good: Interface에 I prefix
+  // Good: Interface with I prefix
   export interface ISlackMessage {
     ts: string;
     user?: string;
     text?: string;
   }
   
-  // Good: Class는 prefix 없음
+  // Good: Class without prefix
   export class SlackMessage {
     private _data: ISlackMessage;
     constructor(data: ISlackMessage) { ... }
   }
   ```
 
-- **비즈니스 로직은 Class에 위임**
+- **Delegate business logic to Classes**
   ```typescript
-  // Good: 비즈니스 로직이 Class에 집중
+  // Good: Business logic concentrated in Class
   export class SlackMessage {
     get formattedTimestamp(): string {
       return new Date(parseFloat(this._data.ts) * 1000).toISOString();
@@ -107,9 +107,9 @@ AI Agent가 이 프로젝트에서 작업을 수행할 때는 **반드시** 다�
   }
   ```
 
-- **HTTP 응답 처리는 Response Model Class 사용**
+- **Use Response Model Classes for HTTP response processing**
   ```typescript
-  // Good: HTTP 응답을 Class로 래핑
+  // Good: Wrap HTTP response with Class
   const rawData: ISlackUsersInfoResponse = await response.json();
   const data = new SlackUsersInfoResponse(rawData);
   
@@ -117,59 +117,59 @@ AI Agent가 이 프로젝트에서 작업을 수행할 때는 **반드시** 다�
     return undefined;
   }
   
-  return data.user; // SlackUser 클래스 반환
+  return data.user; // Return SlackUser class
   ```
 
-#### ❌ 피해야 할 것
-- Interface를 직접 반환하는 함수
-- 비즈니스 로직이 Fetcher에 집중되는 구조
-- Raw HTTP 응답을 직접 사용
+#### ❌ What to Avoid
+- Functions that directly return Interfaces
+- Structure where business logic is concentrated in Fetcher
+- Direct use of raw HTTP responses
 
-### 2. 파일 구조화 및 모듈 분리
+### 2. File Structure and Module Separation
 
-#### ✅ 해야 할 것
-- **서비스별 디렉토리 분리**
+#### ✅ What to Do
+- **Separate directories by service**
   ```
   src/
-  ├── slack/          # Slack 관련 모든 파일
-  ├── atlassian/      # Atlassian 관련 모든 파일
-  └── common/         # 공통 유틸리티
+  ├── slack/          # All Slack-related files
+  ├── atlassian/      # All Atlassian-related files
+  └── common/         # Common utilities
   ```
 
-- **타입 파일 분리**
+- **Separate type files**
   ```typescript
-  // SlackTypes.ts - Slack 전용 타입들
+  // SlackTypes.ts - Slack-specific types
   export interface ISlackMessage { ... }
   export type SlackRequest = { ... }
   
-  // types.ts - 공통 타입들
+  // types.ts - Common types
   export interface IMcpResult { ... }
   export type RequestPayload = { ... }
   ```
 
-- **Import 경로 명확화**
+- **Clear import paths**
   ```typescript
-  // 같은 디렉토리 내
+  // Within same directory
   import { ISlackMessage } from "./SlackTypes.js";
   
-  // 상위 디렉토리
+  // Parent directory
   import { Constants } from "../constants.js";
   
-  // 하위 디렉토리
+  // Subdirectory
   import { SlackFetcher } from "./slack/SlackFetcher.js";
   ```
 
-#### ❌ 피해야 할 것
-- 모든 파일을 루트 디렉토리에 배치
-- 서비스별 타입이 섞여있는 구조
-- 복잡한 상대 경로 (../../..)
+#### ❌ What to Avoid
+- Placing all files in root directory
+- Mixed service-specific types in same structure
+- Complex relative paths (../../..)
 
-### 3. 생성자 설계 및 객체 생성 패턴
+### 3. Constructor Design and Object Creation Patterns
 
-#### ✅ 해야 할 것
-- **자연스러운 생성자 매개변수**
+#### ✅ What to Do
+- **Natural constructor parameters**
   ```typescript
-  // Good: 직관적인 매개변수 순서
+  // Good: Intuitive parameter order
   export class SlackMessageModel {
     constructor(
       message: SlackMessage,
@@ -182,25 +182,25 @@ AI Agent가 이 프로젝트에서 작업을 수행할 때는 **반드시** 다�
   }
   ```
 
-- **정적 팩토리 메서드 활용**
+- **Use static factory methods**
   ```typescript
-  // Good: 의미있는 생성 방법 제공
+  // Good: Provide meaningful creation methods
   export class McpResult {
     static success(text: string): McpResult { ... }
     static error(message: string): McpResult { ... }
   }
   ```
 
-#### ❌ 피해야 할 것
-- 억지로 만든 Wrapper 객체를 생성자에 전달
-- 복잡한 객체 구성을 위한 임시 인터페이스 생성
+#### ❌ What to Avoid
+- Passing artificially created wrapper objects to constructors
+- Creating temporary interfaces for complex object composition
 
-### 4. 변수 선언 및 제어 흐름
+### 4. Variable Declaration and Control Flow
 
-#### ✅ 해야 할 것
-- **Early Return 패턴**
+#### ✅ What to Do
+- **Early Return pattern**
   ```typescript
-  // Good: 조건별로 메서드 분리
+  // Good: Separate methods by condition
   if (isReply && threadTs) {
     return await this.handleReplyMessage(...);
   } else {
@@ -208,29 +208,29 @@ AI Agent가 이 프로젝트에서 작업을 수행할 때는 **반드시** 다�
   }
   ```
 
-- **메서드 분리로 가독성 향상**
+- **Improve readability through method separation**
   ```typescript
-  // Good: 각 케이스별 전용 메서드
+  // Good: Dedicated method for each case
   private static async handleReplyMessage(...): Promise<McpResult> {
     const replyMessage = await this.getSpecificReply(...);
     if (!replyMessage) {
       return this.createErrorResult("Reply message not found");
     }
-    // 처리 로직
+    // Processing logic
   }
   ```
 
-#### ❌ 피해야 할 것
-- let 변수 선언 후 분기문에서 초기화
-- 긴 if-else 체인
-- 변수 상태 추적이 복잡한 구조
+#### ❌ What to Avoid
+- Declaring let variables and initializing in branches
+- Long if-else chains
+- Complex variable state tracking structures
 
-### 5. 결과 타입 통합 및 표준화
+### 5. Result Type Unification and Standardization
 
-#### ✅ 해야 할 것
-- **공통 결과 타입 사용**
+#### ✅ What to Do
+- **Use common result types**
   ```typescript
-  // Good: 모든 Fetcher가 동일한 결과 타입 사용
+  // Good: All Fetchers use the same result type
   export class McpResult {
     toJson(): IMcpResult { ... }
     static success(text: string): McpResult { ... }
@@ -238,22 +238,22 @@ AI Agent가 이 프로젝트에서 작업을 수행할 때는 **반드시** 다�
   }
   ```
 
-- **일관된 에러 처리**
+- **Consistent error handling**
   ```typescript
-  // Good: 모든 Fetcher에서 동일한 패턴
+  // Good: Same pattern across all Fetchers
   private static createErrorResult(message: string): McpResult {
     return McpResult.error(message);
   }
   ```
 
-#### ❌ 피해야 할 것
-- 서비스별로 다른 결과 타입 사용
-- 중복된 에러 처리 로직
+#### ❌ What to Avoid
+- Using different result types per service
+- Duplicated error handling logic
 
-### 6. 데이터 접근 패턴
+### 6. Data Access Patterns
 
-#### ✅ 해야 할 것
-- **Raw 데이터 접근을 위한 data getter**
+#### ✅ What to Do
+- **Raw data access via data getter**
   ```typescript
   export class SlackMessage {
     private _data: ISlackMessage;
@@ -262,55 +262,55 @@ AI Agent가 이 프로젝트에서 작업을 수행할 때는 **반드시** 다�
       return this._data;
     }
     
-    // 비즈니스 로직 메서드들
+    // Business logic methods
     get formattedTimestamp(): string { ... }
   }
   ```
 
-- **계층적 데이터 접근**
+- **Hierarchical data access**
   ```typescript
-  // Model -> Class -> Interface 순서
+  // Model -> Class -> Interface order
   const messageModel = new SlackMessageModel(message, ...);
-  const rawData = messageModel.messageDetails.data; // 필요시에만
+  const rawData = messageModel.messageDetails.data; // Only when needed
   ```
 
-#### ❌ 피해야 할 것
-- 직접적인 Interface 데이터 조작
-- 비즈니스 로직 없는 단순 데이터 전달
+#### ❌ What to Avoid
+- Direct Interface data manipulation
+- Simple data passing without business logic
 
-### 7. 타입 안전성 강화
+### 7. Type Safety Enhancement
 
-#### ✅ 해야 할 것
-- **명확한 타입 정의와 검증**
+#### ✅ What to Do
+- **Clear type definitions and validation**
   ```typescript
-  // Good: 타입 가드와 함께 사용
+  // Good: Use with type guards
   if (!data.isSuccess) {
     return this.createErrorResult(`API error: ${data.error || 'Unknown error'}`);
   }
   
-  return data.user; // 타입이 보장된 상태
+  return data.user; // Type guaranteed state
   ```
 
-- **옵셔널 체이닝 적극 활용**
+- **Actively use optional chaining**
   ```typescript
-  // Good: 안전한 속성 접근
+  // Good: Safe property access
   return this._data.profile?.display_name || 
          this._data.display_name || 
          this._data.name || 
          "Unknown User";
   ```
 
-#### ❌ 피해야 할 것
-- any 타입 남발
-- 타입 단언 과도한 사용
-- 런타임 에러 가능성이 있는 접근
+#### ❌ What to Avoid
+- Overuse of any type
+- Excessive use of type assertions
+- Access patterns that may cause runtime errors
 
-### 8. 성능 및 메모리 최적화
+### 8. Performance and Memory Optimization
 
-#### ✅ 해야 할 것
-- **지연 초기화 패턴**
+#### ✅ What to Do
+- **Lazy initialization pattern**
   ```typescript
-  // Good: 필요할 때만 생성
+  // Good: Create only when needed
   get reactions(): SlackReaction[] {
     if (!this._data.reactions) {
       return [];
@@ -319,32 +319,32 @@ AI Agent가 이 프로젝트에서 작업을 수행할 때는 **반드시** 다�
   }
   ```
 
-- **병렬 처리 활용**
+- **Utilize parallel processing**
   ```typescript
-  // Good: 독립적인 API 호출은 병렬로
+  // Good: Independent API calls in parallel
   const [userInfo, replies] = await Promise.all([
     this.getUserInfo(token, userId),
     this.getReplies(token, channel, timestamp)
   ]);
   ```
 
-#### ❌ 피해야 할 것
-- 불필요한 객체 생성
-- 순차적인 독립 API 호출
+#### ❌ What to Avoid
+- Unnecessary object creation
+- Sequential independent API calls
 
-### 9. 코드 재사용성 및 확장성
+### 9. Code Reusability and Extensibility
 
-#### ✅ 해야 할 것
-- **상속을 통한 코드 재사용**
+#### ✅ What to Do
+- **Code reuse through inheritance**
   ```typescript
-  // Good: 공통 기능은 기본 클래스에
+  // Good: Common functionality in base class
   export class SlackUser { ... }
   export class SlackUserInfo extends SlackUser {}
   ```
 
-- **제네릭을 활용한 공통 패턴**
+- **Common patterns using generics**
   ```typescript
-  // Good: 재사용 가능한 응답 처리
+  // Good: Reusable response processing
   export class ApiResponseHandler<T> {
     static process<T>(rawData: any, ModelClass: new (data: any) => T): T {
       return new ModelClass(rawData);
@@ -352,143 +352,143 @@ AI Agent가 이 프로젝트에서 작업을 수행할 때는 **반드시** 다�
   }
   ```
 
-#### ❌ 피해야 할 것
-- 중복된 코드 패턴
-- 하드코딩된 특정 서비스 로직
+#### ❌ What to Avoid
+- Duplicated code patterns
+- Hard-coded service-specific logic
 
-### 10. 테스트 용이성 (Testability)
+### 10. Testability
 
-#### ✅ 해야 할 것
-- **의존성 주입 가능한 구조**
+#### ✅ What to Do
+- **Dependency injection capable structure**
   ```typescript
-  // Good: 테스트 시 mock 가능
+  // Good: Mockable during testing
   private static async callApi(url: string, headers: Record<string, string>) {
     return fetch(url, { headers });
   }
   ```
 
-- **순수 함수 지향**
+- **Pure function oriented**
   ```typescript
-  // Good: 부작용 없는 데이터 변환
+  // Good: Side-effect free data transformation
   static formatTimestamp(timestamp: string): string {
     return new Date(parseFloat(timestamp) * 1000).toISOString();
   }
   ```
 
-#### ❌ 피해야 할 것
-- 외부 의존성과 강결합
-- 테스트하기 어려운 복잡한 메서드
+#### ❌ What to Avoid
+- Tight coupling with external dependencies
+- Complex methods that are difficult to test
 
-### 11. 모듈 분리 및 파일 구조화 (Module Separation & File Organization)
+### 11. Module Separation & File Organization
 
-#### ✅ 해야 할 것
-- **개별 모델 파일 분리**
+#### ✅ What to Do
+- **Separate individual model files**
   ```typescript
-  // Good: 각 모델을 개별 파일로 분리
+  // Good: Separate each model into individual files
   src/slack/model/
-  ├── SlackUser.ts        # 단일 책임: 사용자 모델
-  ├── SlackMessage.ts     # 단일 책임: 메시지 모델
-  └── SlackReaction.ts    # 단일 책임: 반응 모델
+  ├── SlackUser.ts        # Single responsibility: User model
+  ├── SlackMessage.ts     # Single responsibility: Message model
+  └── SlackReaction.ts    # Single responsibility: Reaction model
   
-  // Bad: 모든 모델을 하나의 파일에
-  src/slack/SlackModels.ts  # 1000+ 줄의 거대한 파일
+  // Bad: All models in one file
+  src/slack/SlackModels.ts  # 1000+ line monolithic file
   ```
 
-- **직접 Import 패턴**
+- **Direct Import pattern**
   ```typescript
-  // Good: 필요한 모델만 직접 import
+  // Good: Import only needed models directly
   import { SlackUser } from "./model/SlackUser.js";
   import { SlackMessage } from "./model/SlackMessage.js";
   
-  // Bad: 중간 레이어를 통한 re-export
+  // Bad: Re-export through intermediate layer
   import { SlackUser, SlackMessage } from "./SlackModels.js";
   ```
 
-- **명확한 의존성 관리**
+- **Clear dependency management**
   ```typescript
-  // Good: 각 모델 파일에서 필요한 의존성만 import
+  // Good: Import only necessary dependencies in each model file
   // SlackMessage.ts
   import { ISlackMessage } from "../SlackTypes.js";
   import { SlackReaction } from "./SlackReaction.js";
   import { SlackAttachment } from "./SlackAttachment.js";
   ```
 
-#### ❌ 피해야 할 것
-- 거대한 모델 파일 (1000+ 줄)
-- 불필요한 re-export 레이어
-- 순환 의존성 생성
-- 모든 모델을 한 번에 import
+#### ❌ What to Avoid
+- Monolithic model files (1000+ lines)
+- Unnecessary re-export layers
+- Creating circular dependencies
+- Importing all models at once
 
-### 12. 결과 타입 통합 및 표준화 (Result Type Unification)
+### 12. Result Type Unification and Standardization
 
-#### ✅ 해야 할 것
-- **공통 결과 타입 사용**
+#### ✅ What to Do
+- **Use common result types**
   ```typescript
-  // Good: 모든 Fetcher가 동일한 결과 타입 사용
+  // Good: All Fetchers use the same result type
   export class McpResult {
     toJson(): IMcpResult { ... }
     static success(text: string): McpResult { ... }
     static error(message: string): McpResult { ... }
   }
   
-  // 모든 Fetcher에서 사용
+  // Used in all Fetchers
   SlackFetcher.fetchSlackMessage(): Promise<McpResult>
   AtlassianFetcher.fetchConfluencePage(): Promise<McpResult>
   Fetcher.doFetch(): Promise<McpResult>
   ```
 
-- **일관된 에러 처리**
+- **Consistent error handling**
   ```typescript
-  // Good: 모든 Fetcher에서 동일한 패턴
+  // Good: Same pattern across all Fetchers
   private static createErrorResult(message: string): McpResult {
     return McpResult.error(message);
   }
   ```
 
-- **통합된 응답 처리**
+- **Unified response processing**
   ```typescript
-  // Good: index.ts에서 일관된 처리
+  // Good: Consistent processing in index.ts
   const result = await SomeFetcher.someMethod();
   const json = result.toJson(); // IMcpResult
   return { content: json.content, isError: json.isError };
   ```
 
-#### ❌ 피해야 할 것
-- 서비스별로 다른 결과 타입 사용
-- 중복된 에러 처리 로직
-- 일관성 없는 응답 형식
+#### ❌ What to Avoid
+- Using different result types per service
+- Duplicated error handling logic
+- Inconsistent response formats
 
-### 13. 코드 중복 제거 및 리팩토링 (Code Deduplication & Refactoring)
+### 13. Code Deduplication & Refactoring
 
-#### ✅ 해야 할 것
-- **사용하지 않는 코드 제거**
+#### ✅ What to Do
+- **Remove unused code**
   ```typescript
-  // Good: 실제로 사용되지 않는 메서드 제거
-  // SlackFetcher에서 getMessageReplies() 메서드 제거
+  // Good: Remove methods that are not actually used
+  // Remove getMessageReplies() method from SlackFetcher
   
-  // Bad: 사용하지 않는 코드를 그대로 유지
-  private static getMessageReplies() { /* 사용되지 않음 */ }
+  // Bad: Keep unused code as is
+  private static getMessageReplies() { /* Not used */ }
   ```
 
-- **중복 타입 통합**
+- **Consolidate duplicate types**
   ```typescript
-  // Good: 동일한 구조의 타입을 하나로 통합
+  // Good: Unify types with identical structure
   interface IMcpResult {
     content: Array<{ type: "text"; text: string }>;
     isError: boolean;
   }
   
-  // Bad: 서비스별로 동일한 구조의 타입 중복 정의
+  // Bad: Duplicate type definitions per service
   interface SlackResult { content: ..., isError: ... }
   interface AtlassianResult { content: ..., isError: ... }
   ```
 
-#### ❌ 피해야 할 것
-- 죽은 코드(Dead Code) 방치
-- 동일한 로직의 중복 구현
-- 일관성 없는 네이밍
+#### ❌ What to Avoid
+- Leaving dead code unattended
+- Duplicate implementation of identical logic
+- Inconsistent naming conventions
 
-## 📚 참고 자료
+## 📚 References
 
 - [MCP Protocol Specification](https://modelcontextprotocol.io/)
 - [TypeScript Best Practices](https://typescript-eslint.io/rules/)
@@ -498,6 +498,6 @@ AI Agent가 이 프로젝트에서 작업을 수행할 때는 **반드시** 다�
 ---
 
 
-**마지막 업데이트**: 2025-08-22  
-**작성자**: AI Assistant  
-**버전**: 2.1
+**Last Updated**: 2025-08-22  
+**Author**: AI Assistant  
+**Version**: 2.1
