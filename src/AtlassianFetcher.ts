@@ -1,6 +1,8 @@
 import { JSDOM } from "jsdom";
 import { ConfluenceRequest, JiraRequest } from "./types.js";
 import { Constants } from "./constants.js";
+import { ConfluencePage, JiraTicket, ConfluenceApiResponse, JiraApiResponse } from "./AtlassianModels.js";
+import { ResponseBuilder } from "./ResponseBuilder.js";
 
 interface AtlassianResult {
   content: Array<{ type: "text"; text: string }>;
@@ -38,16 +40,6 @@ export class AtlassianFetcher {
   }
 
   /**
-   * Apply length limits to text content
-   */
-  private static applyLengthLimits(text: string, maxLength: number): string {
-    if (text.length <= maxLength) {
-      return text;
-    }
-    return text.substring(0, maxLength);
-  }
-
-  /**
    * Extract domain from URL for API authentication
    */
   private static extractDomain(url: string): string {
@@ -73,11 +65,104 @@ export class AtlassianFetcher {
   }
 
   /**
+   * Make authenticated API request to Atlassian
+   */
+  private static async makeAtlassianRequest(url: string): Promise<Response> {
+    const authHeader = this.createAuthHeader();
+    
+    return fetch(url, {
+      headers: {
+        "Authorization": authHeader,
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+    });
+  }
+
+  /**
+   * Handle API response errors
+   */
+  private static handleApiError(response: Response, resourceType: string, resourceId: string): AtlassianResult {
+    if (response.status === 401) {
+      return this.createErrorResult("Authentication failed. Please check your ATLASSIAN_USER and ATLASSIAN_API_TOKEN");
+    }
+    if (response.status === 404) {
+      return this.createErrorResult(`${resourceType} not found: ${resourceId}`);
+    }
+    return this.createErrorResult(`HTTP error: ${response.status} ${response.statusText}`);
+  }
+
+  /**
+   * Convert HTML to plain text
+   */
+  private static htmlToPlainText(htmlContent: string): string {
+    const dom = new JSDOM(htmlContent);
+    const document = dom.window.document;
+    
+    // Remove scripts and styles
+    this.removeElementsByTagName(document, "script");
+    this.removeElementsByTagName(document, "style");
+    
+    const textContent = document.body.textContent || "";
+    return textContent.replace(/\s+/g, " ").trim();
+  }
+
+  /**
+   * Format Confluence page content
+   */
+  private static formatConfluenceContent(page: ConfluencePage, url: string, maxLength?: number): string {
+    const normalizedText = this.htmlToPlainText(page.htmlContent);
+
+    return new ResponseBuilder()
+      .addField("Title", page.title)
+      .addField("Space", `${page.spaceKey} (${page.spaceName})`)
+      .addField("Author", page.authorName)
+      .addField("URL", url)
+      .addSection("Content", normalizedText)
+      .build(maxLength);
+  }
+
+  /**
+   * Format Jira ticket content
+   */
+  private static formatJiraContent(ticket: JiraTicket, url: string, maxLength?: number): string {
+    const builder = new ResponseBuilder()
+      .addField("Ticket", ticket.key)
+      .addField("Title", ticket.summary)
+      .addField("Type", ticket.issueType)
+      .addField("Status", ticket.status)
+      .addField("Priority", ticket.priority)
+      .addField("Assignee", ticket.assignee)
+      .addField("Reporter", ticket.reporter)
+      .addField("Created", ticket.created)
+      .addField("Updated", ticket.updated)
+      .addField("URL", url)
+      .addSection("Description", ticket.description);
+
+    // Add subtasks if available
+    if (ticket.hasSubtasks) {
+      const subtaskItems = ticket.subtasks.map(subtask => 
+        `${subtask.key}: ${subtask.summary} (${subtask.status})`
+      );
+      builder.addNumberedList("Subtasks", subtaskItems);
+    }
+
+    // Add comments if available (latest 20)
+    if (ticket.hasComments) {
+      const commentItems = ticket.comments.map(comment => 
+        `${comment.author} (${comment.created}):\n${comment.body}`
+      );
+      builder.addNumberedList("Recent Comments (Latest 20)", commentItems);
+    }
+
+    return builder.build(maxLength);
+  }
+
+  /**
    * Fetch Confluence page content
    */
   static async fetchConfluencePage(request: ConfluenceRequest): Promise<AtlassianResult> {
     try {
-      const authHeader = this.createAuthHeader();
       const domain = this.extractDomain(request.url);
       
       // Extract page ID from Confluence URL
@@ -89,59 +174,23 @@ export class AtlassianFetcher {
       const pageId = pageIdMatch[1];
       const apiUrl = `${domain}/wiki/rest/api/content/${pageId}?expand=body.export_view,version,space`;
 
-      const response = await fetch(apiUrl, {
-        headers: {
-          "Authorization": authHeader,
-          "Accept": "application/json",
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await this.makeAtlassianRequest(apiUrl);
 
       if (!response.ok) {
-        if (response.status === 401) {
-          return this.createErrorResult("Authentication failed. Please check your ATLASSIAN_USER and ATLASSIAN_API_TOKEN");
-        }
-        if (response.status === 404) {
-          return this.createErrorResult(`Confluence page not found: ${pageId}`);
-        }
-        return this.createErrorResult(`HTTP error: ${response.status} ${response.statusText}`);
+        return this.handleApiError(response, "Confluence page", pageId);
       }
 
-      const data = await response.json();
+      const data: ConfluenceApiResponse = await response.json();
+      const page = new ConfluencePage(data);
       
-      // Extract content from Confluence page according to the new specification
-      const title = data.title || "No title";
-      const spaceKey = data.space?.key || "Unknown space";
-      const spaceName = data.space?.name || "Unknown space name";
-      const authorName = data.version?.by?.publicName || "Unknown author";
-      const htmlContent = data.body?.export_view?.value || "No content";
-
-      // Convert HTML to plain text
-      const dom = new JSDOM(htmlContent);
-      const document = dom.window.document;
-      
-      // Remove scripts and styles
-      this.removeElementsByTagName(document, "script");
-      this.removeElementsByTagName(document, "style");
-      
-      const textContent = document.body.textContent || "";
-      const normalizedText = textContent.replace(/\s+/g, " ").trim();
-
-      const result = `Title: ${title}
-Space: ${spaceKey} (${spaceName})
-Author: ${authorName}
-URL: ${request.url}
-
-Content:
-${normalizedText}`;
-
-      const processedContent = this.applyLengthLimits(
-        result,
+      const result = this.formatConfluenceContent(
+        page, 
+        request.url, 
         request.maxLength ?? this.DEFAULT_MAX_LENGTH
       );
-
+      
       return {
-        content: [{ type: "text", text: processedContent }],
+        content: [{ type: "text", text: result }],
         isError: false,
       };
 
@@ -155,143 +204,41 @@ ${normalizedText}`;
    */
   static async fetchJiraTicket(request: JiraRequest): Promise<AtlassianResult> {
     try {
-      const authHeader = this.createAuthHeader();
       const domain = this.extractDomain(request.url);
       
-      // Extract ticket key from Jira URL (e.g., UCC-3742 from https://inflab.atlassian.net/browse/UCC-3742)
+      // Extract ticket key from Jira URL
       const ticketKeyMatch = request.url.match(/\/browse\/([A-Z]+-\d+)/);
       if (!ticketKeyMatch) {
         return this.createErrorResult("Invalid Jira URL format. Expected format: .../browse/{TICKET-KEY}");
       }
       
       const ticketKey = ticketKeyMatch[1];
-      const apiUrl = `${domain}/rest/api/3/issue/${ticketKey}?expand=names,schema,operations,editmeta,changelog,renderedFields`;
+      // Include comment in expand parameter to ensure comments are fetched
+      const apiUrl = `${domain}/rest/api/3/issue/${ticketKey}?expand=names,schema,operations,editmeta,changelog,renderedFields,comment`;
 
-      const response = await fetch(apiUrl, {
-        headers: {
-          "Authorization": authHeader,
-          "Accept": "application/json",
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await this.makeAtlassianRequest(apiUrl);
 
       if (!response.ok) {
-        if (response.status === 401) {
-          return this.createErrorResult("Authentication failed. Please check your ATLASSIAN_USER and ATLASSIAN_API_TOKEN");
-        }
-        if (response.status === 404) {
-          return this.createErrorResult(`Jira ticket not found: ${ticketKey}`);
-        }
-        return this.createErrorResult(`HTTP error: ${response.status} ${response.statusText}`);
+        return this.handleApiError(response, "Jira ticket", ticketKey);
       }
 
-      const data = await response.json();
+      const data: JiraApiResponse = await response.json();
+      const ticket = new JiraTicket(data);
       
-      // Extract ticket information
-      const key = data.key || "Unknown key";
-      const summary = data.fields?.summary || "No summary";
-      const assignee = data.fields?.assignee?.displayName || "Unassigned";
-      const status = data.fields?.status?.name || "Unknown status";
-      const priority = data.fields?.priority?.name || "Unknown priority";
-      const issueType = data.fields?.issuetype?.name || "Unknown type";
-      const reporter = data.fields?.reporter?.displayName || "Unknown reporter";
-      const created = data.fields?.created || "Unknown";
-      const updated = data.fields?.updated || "Unknown";
-      
-      // Get description (can be in different formats)
-      let description = "No description";
-      if (data.fields?.description) {
-        if (typeof data.fields.description === 'string') {
-          description = data.fields.description;
-        } else if (data.fields.description.content) {
-          // Handle Atlassian Document Format (ADF)
-          description = this.extractTextFromADF(data.fields.description);
-        }
-      }
-
-      // Get subtasks if available
-      let subtasksInfo = "";
-      if (data.fields?.subtasks && data.fields.subtasks.length > 0) {
-        subtasksInfo = "\n\nSubtasks:\n";
-        data.fields.subtasks.forEach((subtask: any, index: number) => {
-          subtasksInfo += `${index + 1}. ${subtask.key}: ${subtask.fields?.summary || 'No summary'} (${subtask.fields?.status?.name || 'Unknown status'})\n`;
-        });
-      }
-
-      // Get comments if available (from changelog or separate API call would be needed for full comments)
-      let commentsInfo = "";
-      if (data.fields?.comment && data.fields.comment.comments && data.fields.comment.comments.length > 0) {
-        commentsInfo = "\n\nRecent Comments:\n";
-        data.fields.comment.comments.slice(-3).forEach((comment: any, index: number) => {
-          const author = comment.author?.displayName || "Unknown author";
-          const body = typeof comment.body === 'string' ? comment.body : this.extractTextFromADF(comment.body);
-          const created = comment.created || "Unknown date";
-          commentsInfo += `${index + 1}. ${author} (${created}):\n${body}\n\n`;
-        });
-      }
-
-      const result = `Ticket: ${key}
-Title: ${summary}
-Type: ${issueType}
-Status: ${status}
-Priority: ${priority}
-Assignee: ${assignee}
-Reporter: ${reporter}
-Created: ${created}
-Updated: ${updated}
-URL: ${request.url}
-
-Description:
-${description}${subtasksInfo}${commentsInfo}`;
-
-      const processedContent = this.applyLengthLimits(
-        result,
+      const result = this.formatJiraContent(
+        ticket, 
+        request.url, 
         request.maxLength ?? this.DEFAULT_MAX_LENGTH
       );
-
+      
       return {
-        content: [{ type: "text", text: processedContent }],
+        content: [{ type: "text", text: result }],
         isError: false,
       };
 
     } catch (error) {
       return this.createErrorResult((error as Error).message);
     }
-  }
-
-  /**
-   * Extract text content from Atlassian Document Format (ADF)
-   */
-  private static extractTextFromADF(adfContent: any): string {
-    if (!adfContent || typeof adfContent !== 'object') {
-      return String(adfContent || '');
-    }
-
-    let text = '';
-    
-    if (adfContent.type === 'text') {
-      const textContent = adfContent.text || '';
-      // Check if this text has link marks
-      if (adfContent.marks && Array.isArray(adfContent.marks)) {
-        const linkMark = adfContent.marks.find((mark: any) => mark.type === 'link');
-        const href = linkMark?.attrs?.href;
-        if (href) {
-          return `[${textContent}](${href})`;
-        }
-      }
-      return textContent;
-    }
-    
-    if (adfContent.content && Array.isArray(adfContent.content)) {
-      for (const item of adfContent.content) {
-        text += this.extractTextFromADF(item);
-        if (item.type === 'paragraph' || item.type === 'heading') {
-          text += '\n';
-        }
-      }
-    }
-    
-    return text;
   }
 
   /**

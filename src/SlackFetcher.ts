@@ -8,6 +8,7 @@ import {
   SlackAttachment
 } from "./types.js";
 import { Constants } from "./constants.js";
+import { ResponseBuilder } from "./ResponseBuilder.js";
 
 interface SlackResult {
   content: Array<{ type: "text"; text: string }>;
@@ -59,16 +60,6 @@ export class SlackFetcher {
       threadTs: threadTs || undefined,
       isReply 
     };
-  }
-
-  /**
-   * Apply length limits to text content
-   */
-  private static applyLengthLimits(text: string, maxLength: number): string {
-    if (text.length <= maxLength) {
-      return text;
-    }
-    return text.substring(0, maxLength);
   }
 
   /**
@@ -181,18 +172,20 @@ export class SlackFetcher {
         this.getUserInfo(accessToken, userId).then(userName => ({ userId, userName }))
       ));
       
-      // Build replies text with user information from the map
-      let repliesText = "\n\nReplies:\n";
-      for (const reply of replies) {
+      // Build replies using ResponseBuilder
+      const replyItems = replies.map(reply => {
         const userInfo = userInfos.find(info => info.userId === reply.user);
         const userName = userInfo?.userName ?? "Unknown User";
         const replyText = reply.text || "No content";
         const replyTime = reply.ts ? new Date(parseFloat(reply.ts) * 1000).toISOString() : "Unknown time";
         
-        repliesText += `- ${userName} (${replyTime}): ${replyText}\n`;
-      }
+        return `${userName} (${replyTime}): ${replyText}`;
+      });
 
-      return repliesText;
+      return new ResponseBuilder()
+        .addBulletList("Replies", replyItems)
+        .build();
+
     } catch {
       return "";
     }
@@ -206,14 +199,15 @@ export class SlackFetcher {
       return "";
     }
 
-    let reactionsText = "\n\nReactions:\n";
-    reactions.forEach(reaction => {
+    const reactionItems = reactions.map(reaction => {
       const emoji = reaction.name || "unknown";
       const count = reaction.count || 0;
-      reactionsText += `${emoji}: ${count} `;
+      return `${emoji}: ${count}`;
     });
 
-    return reactionsText.trim();
+    return new ResponseBuilder()
+      .addRaw(`\nReactions:\n${reactionItems.join(' ')}`)
+      .build();
   }
 
   /**
@@ -224,53 +218,73 @@ export class SlackFetcher {
       return "";
     }
 
-    let attachmentsText = "\n\nAttachments:\n";
-    attachments.forEach((attachment, index) => {
-      attachmentsText += `${index + 1}. `;
+    const attachmentItems = attachments.map((attachment, index) => {
+      const builder = new ResponseBuilder();
       
       if (attachment.title) {
-        attachmentsText += `Title: ${attachment.title}\n`;
+        builder.addField("Title", attachment.title);
       }
       
       if (attachment.text) {
-        attachmentsText += `Content: ${attachment.text}\n`;
+        builder.addField("Content", attachment.text);
       }
       
       if (attachment.pretext) {
-        attachmentsText += `Pretext: ${attachment.pretext}\n`;
+        builder.addField("Pretext", attachment.pretext);
       }
       
       if (attachment.image_url) {
-        attachmentsText += `Image: ${attachment.image_url}\n`;
+        builder.addField("Image", attachment.image_url);
       }
       
       if (attachment.thumb_url) {
-        attachmentsText += `Thumbnail: ${attachment.thumb_url}\n`;
+        builder.addField("Thumbnail", attachment.thumb_url);
       }
       
       if (attachment.from_url) {
-        attachmentsText += `URL: ${attachment.from_url}\n`;
+        builder.addField("URL", attachment.from_url);
       }
       
       if (attachment.service_name) {
-        attachmentsText += `Service: ${attachment.service_name}\n`;
+        builder.addField("Service", attachment.service_name);
       }
       
       if (attachment.author_name) {
-        attachmentsText += `Author: ${attachment.author_name}\n`;
+        builder.addField("Author", attachment.author_name);
       }
       
       if (attachment.fields && attachment.fields.length > 0) {
-        attachmentsText += `Fields:\n`;
-        attachment.fields.forEach(field => {
-          attachmentsText += `  - ${field.title}: ${field.value}\n`;
-        });
+        const fieldItems = attachment.fields.map(field => `${field.title}: ${field.value}`);
+        builder.addBulletList("Fields", fieldItems);
       }
       
-      attachmentsText += "\n";
+      return `${index + 1}. ${builder.build()}`;
     });
 
-    return attachmentsText;
+    return new ResponseBuilder()
+      .addNumberedList("Attachments", attachmentItems)
+      .build();
+  }
+
+  /**
+   * Format files if present
+   */
+  private static formatFiles(files?: any[]): string {
+    if (!files || files.length === 0) {
+      return "";
+    }
+
+    const fileItems = files.map((file, index) => {
+      let fileInfo = file.name || file.title || 'Unnamed file';
+      if (file.mimetype) fileInfo += ` (${file.mimetype})`;
+      if (file.size) fileInfo += ` - ${Math.round(file.size / 1024)}KB`;
+      if (file.permalink) fileInfo += `\n   URL: ${file.permalink}`;
+      return fileInfo;
+    });
+
+    return new ResponseBuilder()
+      .addNumberedList("Files", fileItems)
+      .build();
   }
 
   /**
@@ -336,7 +350,7 @@ export class SlackFetcher {
       const messageSubtype = message.subtype ? ` (${message.subtype})` : "";
       
       // Get thread info
-      const threadInfo = message.thread_ts ? `\nThread: Yes (${message.reply_count || 0} replies)` : "";
+      const threadInfo = message.thread_ts ? `Yes (${message.reply_count || 0} replies)` : "No";
       
       // Get replies only for original messages (not for reply messages)
       const repliesText = !isReply ? await this.getMessageReplies(accessToken, channel, message.ts || timestamp) : "";
@@ -348,38 +362,41 @@ export class SlackFetcher {
       const attachmentsText = this.formatAttachments(message.attachments);
       
       // Format files if present
-      let filesText = "";
-      if (message.files && message.files.length > 0) {
-        filesText = "\n\nFiles:\n";
-        message.files.forEach((file, index) => {
-          filesText += `${index + 1}. ${file.name || file.title || 'Unnamed file'}`;
-          if (file.mimetype) filesText += ` (${file.mimetype})`;
-          if (file.size) filesText += ` - ${Math.round(file.size / 1024)}KB`;
-          if (file.permalink) filesText += `\n   URL: ${file.permalink}`;
-          filesText += "\n";
-        });
+      const filesText = this.formatFiles(message.files);
+
+      // Build the response using ResponseBuilder
+      const builder = new ResponseBuilder()
+        .addTitle(`Slack ${messageContext} Information:`)
+        .addField("Channel", channel)
+        .addField("Timestamp", messageTime)
+        .addField("Author", userName)
+        .addField("Type", `${messageType}${messageSubtype}`)
+        .addField("Thread", threadInfo)
+        .addFieldIf(isReply && Boolean(threadTs), "Original Thread Timestamp", threadTs || "")
+        .addField("URL", request.url)
+        .addSection("Message", messageText);
+
+      // Add optional sections
+      if (reactionsText) {
+        builder.addRaw(reactionsText);
+      }
+      
+      if (attachmentsText) {
+        builder.addRaw(attachmentsText);
+      }
+      
+      if (filesText) {
+        builder.addRaw(filesText);
+      }
+      
+      if (repliesText) {
+        builder.addRaw(repliesText);
       }
 
-      // Add thread context for reply messages
-      const threadContextText = isReply && threadTs ? `\nOriginal Thread Timestamp: ${threadTs}` : "";
-
-      const result = `Slack ${messageContext} Information:
-Channel: ${channel}
-Timestamp: ${messageTime}
-Author: ${userName}
-Type: ${messageType}${messageSubtype}${threadInfo}${threadContextText}
-URL: ${request.url}
-
-Message:
-${messageText}${reactionsText}${attachmentsText}${filesText}${repliesText}`;
-
-      const processedContent = this.applyLengthLimits(
-        result,
-        request.maxLength ?? this.DEFAULT_MAX_LENGTH
-      );
+      const result = builder.build(request.maxLength ?? this.DEFAULT_MAX_LENGTH);
 
       return {
-        content: [{ type: "text", text: processedContent }],
+        content: [{ type: "text", text: result }],
         isError: false,
       };
 
