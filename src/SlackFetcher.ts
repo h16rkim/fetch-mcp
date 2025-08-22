@@ -4,11 +4,16 @@ import {
   SlackConversationsRepliesResponse, 
   SlackUsersInfoResponse,
   SlackMessage,
-  SlackReaction,
-  SlackAttachment
+  SlackUser
 } from "./types.js";
 import { Constants } from "./constants.js";
 import { ResponseBuilder } from "./ResponseBuilder.js";
+import { 
+  SlackMessageModel, 
+  SlackApiResponse, 
+  SlackUserInfo, 
+  SlackMessageInfo 
+} from "./SlackModels.js";
 
 interface SlackResult {
   content: Array<{ type: "text"; text: string }>;
@@ -97,15 +102,66 @@ export class SlackFetcher {
         return "Unknown User";
       }
 
-      const user = data.user;
-      return user.profile?.display_name || 
-             user.display_name || 
-             user.profile?.real_name || 
-             user.real_name || 
-             user.name || 
-             "Unknown User";
+      const userInfo = new SlackUserInfo(data.user);
+      return userInfo.bestDisplayName;
     } catch {
       return "Unknown User";
+    }
+  }
+
+  /**
+   * Get user information object by user ID
+   */
+  private static async getUserInfoObject(accessToken: string, userId: string): Promise<SlackUser | undefined> {
+    try {
+      const response = await fetch(`https://slack.com/api/users.info?user=${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        return undefined;
+      }
+
+      const data: SlackUsersInfoResponse = await response.json();
+      
+      if (!data.ok || !data.user) {
+        return undefined;
+      }
+
+      return data.user;
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
+   * Get SlackUserInfo by user ID
+   */
+  private static async getSlackUserInfo(accessToken: string, userId: string): Promise<SlackUserInfo | undefined> {
+    try {
+      const response = await fetch(`https://slack.com/api/users.info?user=${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        return undefined;
+      }
+
+      const data: SlackUsersInfoResponse = await response.json();
+      
+      if (!data.ok || !data.user) {
+        return undefined;
+      }
+
+      return new SlackUserInfo(data.user);
+    } catch {
+      return undefined;
     }
   }
 
@@ -167,15 +223,16 @@ export class SlackFetcher {
       // Extract unique user IDs from replies
       const uniqueUserIds = [...new Set(replies.map(reply => reply.user).filter(userId => Boolean(userId)))] as string[];
 
-      // Fetch all user information in parallel
-      const userInfos = await Promise.all(uniqueUserIds.map(userId =>
-        this.getUserInfo(accessToken, userId).then(userName => ({ userId, userName }))
-      ));
+      // Fetch all user information in parallel using SlackUserInfo
+      const userInfos = await Promise.all(uniqueUserIds.map(async userId => {
+        const userInfo = await this.getSlackUserInfo(accessToken, userId);
+        return { userId, userInfo };
+      }));
       
       // Build replies using ResponseBuilder
       const replyItems = replies.map(reply => {
-        const userInfo = userInfos.find(info => info.userId === reply.user);
-        const userName = userInfo?.userName ?? "Unknown User";
+        const userInfoData = userInfos.find(info => info.userId === reply.user);
+        const userName = userInfoData?.userInfo?.bestDisplayName ?? "Unknown User";
         const replyText = reply.text || "No content";
         const replyTime = reply.ts ? new Date(parseFloat(reply.ts) * 1000).toISOString() : "Unknown time";
         
@@ -192,99 +249,33 @@ export class SlackFetcher {
   }
 
   /**
-   * Format reactions (emojis)
+   * Get message replies as array (thread)
    */
-  private static formatReactions(reactions?: SlackReaction[]): string {
-    if (!reactions || reactions.length === 0) {
-      return "";
+  private static async getMessageRepliesArray(accessToken: string, channel: string, timestamp: string): Promise<SlackMessage[]> {
+    try {
+      const response = await fetch(`https://slack.com/api/conversations.replies?channel=${channel}&ts=${timestamp}`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        return [];
+      }
+
+      const data: SlackConversationsRepliesResponse = await response.json();
+      
+      if (!data.ok || !data.messages || data.messages.length <= 1) {
+        return [];
+      }
+
+      // Skip the first message (original message) and get replies
+      return data.messages.slice(1);
+
+    } catch {
+      return [];
     }
-
-    const reactionItems = reactions.map(reaction => {
-      const emoji = reaction.name || "unknown";
-      const count = reaction.count || 0;
-      return `${emoji}: ${count}`;
-    });
-
-    return new ResponseBuilder()
-      .addRaw(`\nReactions:\n${reactionItems.join(' ')}`)
-      .build();
-  }
-
-  /**
-   * Format attachments
-   */
-  private static formatAttachments(attachments?: SlackAttachment[]): string {
-    if (!attachments || attachments.length === 0) {
-      return "";
-    }
-
-    const attachmentItems = attachments.map((attachment, index) => {
-      const builder = new ResponseBuilder();
-      
-      if (attachment.title) {
-        builder.addField("Title", attachment.title);
-      }
-      
-      if (attachment.text) {
-        builder.addField("Content", attachment.text);
-      }
-      
-      if (attachment.pretext) {
-        builder.addField("Pretext", attachment.pretext);
-      }
-      
-      if (attachment.image_url) {
-        builder.addField("Image", attachment.image_url);
-      }
-      
-      if (attachment.thumb_url) {
-        builder.addField("Thumbnail", attachment.thumb_url);
-      }
-      
-      if (attachment.from_url) {
-        builder.addField("URL", attachment.from_url);
-      }
-      
-      if (attachment.service_name) {
-        builder.addField("Service", attachment.service_name);
-      }
-      
-      if (attachment.author_name) {
-        builder.addField("Author", attachment.author_name);
-      }
-      
-      if (attachment.fields && attachment.fields.length > 0) {
-        const fieldItems = attachment.fields.map(field => `${field.title}: ${field.value}`);
-        builder.addBulletList("Fields", fieldItems);
-      }
-      
-      return `${index + 1}. ${builder.build()}`;
-    });
-
-    return new ResponseBuilder()
-      .addNumberedList("Attachments", attachmentItems)
-      .build();
-  }
-
-  /**
-   * Format files if present
-   */
-  private static formatFiles(files?: any[]): string {
-    if (!files || files.length === 0) {
-      return "";
-    }
-
-    const fileItems = files.map((file, index) => {
-      let fileInfo = file.name || file.title || 'Unnamed file';
-      if (file.mimetype) fileInfo += ` (${file.mimetype})`;
-      if (file.size) fileInfo += ` - ${Math.round(file.size / 1024)}KB`;
-      if (file.permalink) fileInfo += `\n   URL: ${file.permalink}`;
-      return fileInfo;
-    });
-
-    return new ResponseBuilder()
-      .addNumberedList("Files", fileItems)
-      .build();
   }
 
   /**
@@ -296,7 +287,7 @@ export class SlackFetcher {
       const { channel, timestamp, threadTs, isReply } = this.parseSlackUrl(request.url);
       
       let message: SlackMessage;
-      let messageContext = "";
+      let user: SlackUser | undefined;
 
       if (isReply && threadTs) {
         // This is a reply URL, fetch the specific reply message
@@ -307,7 +298,6 @@ export class SlackFetcher {
         }
         
         message = replyMessage;
-        messageContext = "Reply to Thread";
       } else {
         // This is a regular message URL, fetch the message
         const response = await fetch(`https://slack.com/api/conversations.history?channel=${channel}&latest=${timestamp}&limit=1&inclusive=true`, {
@@ -335,62 +325,125 @@ export class SlackFetcher {
         }
 
         message = data.messages[0];
-        messageContext = "Original Message";
       }
       
       // Get user information
-      const userName = await this.getUserInfo(accessToken, message.user || "Unknown");
-      
-      // Get message content
-      const messageText = message.text || "No content";
-      const messageTime = message.ts ? new Date(parseFloat(message.ts) * 1000).toISOString() : "Unknown time";
-      
-      // Get message type and subtype info
-      const messageType = message.type || "message";
-      const messageSubtype = message.subtype ? ` (${message.subtype})` : "";
-      
-      // Get thread info
-      const threadInfo = message.thread_ts ? `Yes (${message.reply_count || 0} replies)` : "No";
+      if (message.user) {
+        user = await this.getUserInfoObject(accessToken, message.user);
+      }
       
       // Get replies only for original messages (not for reply messages)
-      const repliesText = !isReply ? await this.getMessageReplies(accessToken, channel, message.ts || timestamp) : "";
-      
-      // Format reactions
-      const reactionsText = this.formatReactions(message.reactions);
-      
-      // Format attachments
-      const attachmentsText = this.formatAttachments(message.attachments);
-      
-      // Format files if present
-      const filesText = this.formatFiles(message.files);
+      let replies: SlackMessage[] = [];
+      if (!isReply && message.thread_ts) {
+        replies = await this.getMessageRepliesArray(accessToken, channel, message.ts || timestamp);
+      }
 
-      // Build the response using ResponseBuilder
+      // Create SlackMessageModel
+      const slackApiResponse: SlackApiResponse = {
+        message,
+        user,
+        channel,
+        isReply,
+        threadTs,
+        replies
+      };
+
+      const messageModel = new SlackMessageModel(slackApiResponse);
+
+      // Build the response using ResponseBuilder and SlackMessageModel
       const builder = new ResponseBuilder()
-        .addTitle(`Slack ${messageContext} Information:`)
-        .addField("Channel", channel)
-        .addField("Timestamp", messageTime)
-        .addField("Author", userName)
-        .addField("Type", `${messageType}${messageSubtype}`)
-        .addField("Thread", threadInfo)
-        .addFieldIf(isReply && Boolean(threadTs), "Original Thread Timestamp", threadTs || "")
+        .addTitle(`Slack ${messageModel.messageContext} Information:`)
+        .addField("Channel", messageModel.channel)
+        .addField("Timestamp", messageModel.formattedTimestamp)
+        .addField("Author", messageModel.author)
+        .addField("Type", messageModel.messageType)
+        .addField("Thread", messageModel.threadInfo)
+        .addFieldIf(messageModel.isReply && Boolean(messageModel.originalThreadTimestamp), "Original Thread Timestamp", messageModel.originalThreadTimestamp || "")
         .addField("URL", request.url)
-        .addSection("Message", messageText);
+        .addSection("Message", messageModel.text);
 
-      // Add optional sections
-      if (reactionsText) {
-        builder.addRaw(reactionsText);
+      // Add reactions if present
+      if (messageModel.hasReactions) {
+        builder.addRaw(`\nReactions:\n${messageModel.formattedReactions}`);
       }
       
-      if (attachmentsText) {
-        builder.addRaw(attachmentsText);
+      // Add attachments if present
+      if (messageModel.hasAttachments) {
+        const attachmentItems = messageModel.getFormattedAttachments().map((attachment, index) => {
+          const attachmentBuilder = new ResponseBuilder();
+          
+          if (attachment.title) {
+            attachmentBuilder.addField("Title", attachment.title);
+          }
+          
+          if (attachment.text) {
+            attachmentBuilder.addField("Content", attachment.text);
+          }
+          
+          if (attachment.pretext) {
+            attachmentBuilder.addField("Pretext", attachment.pretext);
+          }
+          
+          if (attachment.imageUrl) {
+            attachmentBuilder.addField("Image", attachment.imageUrl);
+          }
+          
+          if (attachment.thumbUrl) {
+            attachmentBuilder.addField("Thumbnail", attachment.thumbUrl);
+          }
+          
+          if (attachment.fromUrl) {
+            attachmentBuilder.addField("URL", attachment.fromUrl);
+          }
+          
+          if (attachment.serviceName) {
+            attachmentBuilder.addField("Service", attachment.serviceName);
+          }
+          
+          if (attachment.authorName) {
+            attachmentBuilder.addField("Author", attachment.authorName);
+          }
+          
+          if (attachment.fields && attachment.fields.length > 0) {
+            const fieldItems = attachment.fields.map(field => `${field.title}: ${field.value}`);
+            attachmentBuilder.addBulletList("Fields", fieldItems);
+          }
+          
+          return `${index + 1}. ${attachmentBuilder.build()}`;
+        });
+
+        builder.addNumberedList("Attachments", attachmentItems);
       }
       
-      if (filesText) {
-        builder.addRaw(filesText);
+      // Add files if present
+      if (messageModel.hasFiles) {
+        const fileItems = messageModel.formattedFiles.map(file => {
+          let fileInfo = file.info;
+          if (file.url) fileInfo += `\n   URL: ${file.url}`;
+          return fileInfo;
+        });
+
+        builder.addNumberedList("Files", fileItems);
       }
       
-      if (repliesText) {
-        builder.addRaw(repliesText);
+      // Add replies if present
+      if (messageModel.hasReplies) {
+        // Get unique user IDs from replies
+        const uniqueUserIds = [...new Set(messageModel.formattedReplies.map(reply => reply.author).filter(userId => Boolean(userId)))];
+
+        // Fetch all user information in parallel using SlackUserInfo
+        const userInfos = await Promise.all(uniqueUserIds.map(async userId => {
+          const userInfo = await this.getSlackUserInfo(accessToken, userId);
+          return { userId, userInfo };
+        }));
+
+        const replyItems = messageModel.formattedReplies.map(reply => {
+          const userInfoData = userInfos.find(info => info.userId === reply.author);
+          const userName = userInfoData?.userInfo?.bestDisplayName ?? "Unknown User";
+          return `${userName} (${reply.timestamp}): ${reply.text}`;
+        });
+
+        builder.addBulletList("Replies", replyItems);
       }
 
       const result = builder.build(request.maxLength ?? this.DEFAULT_MAX_LENGTH);
