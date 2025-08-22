@@ -1,5 +1,10 @@
 import { JSDOM } from "jsdom";
-import { ConfluenceRequest, JiraRequest, IConfluenceApiResponse, IJiraApiResponse } from "./AtlassianTypes.js";
+import {
+  ConfluenceRequest,
+  JiraRequest,
+  IConfluenceApiResponse,
+  IJiraApiResponse,
+} from "./AtlassianTypes.js";
 import { Constants } from "../constants.js";
 import { ConfluencePage } from "./model/ConfluencePage.js";
 import { JiraTicket } from "./model/JiraTicket.js";
@@ -15,14 +20,18 @@ export class AtlassianFetcher {
   private static getCredentials(): { user: string; token: string } {
     const user = process.env[Constants.ENV_ATLASSIAN_USER];
     const token = process.env[Constants.ENV_ATLASSIAN_API_TOKEN];
-    
+
     if (!user) {
-      throw new Error(`${Constants.ENV_ATLASSIAN_USER} environment variable is not set`);
+      throw new Error(
+        `${Constants.ENV_ATLASSIAN_USER} environment variable is not set`
+      );
     }
     if (!token) {
-      throw new Error(`${Constants.ENV_ATLASSIAN_API_TOKEN} environment variable is not set`);
+      throw new Error(
+        `${Constants.ENV_ATLASSIAN_API_TOKEN} environment variable is not set`
+      );
     }
-    
+
     return { user, token };
   }
 
@@ -32,7 +41,7 @@ export class AtlassianFetcher {
   private static createAuthHeader(): string {
     const { user, token } = this.getCredentials();
     const credentials = `${user}:${token}`;
-    const base64Credentials = Buffer.from(credentials).toString('base64');
+    const base64Credentials = Buffer.from(credentials).toString("base64");
     return `Basic ${base64Credentials}`;
   }
 
@@ -60,11 +69,11 @@ export class AtlassianFetcher {
    */
   private static async makeAtlassianRequest(url: string): Promise<Response> {
     const authHeader = this.createAuthHeader();
-    
+
     return fetch(url, {
       headers: {
-        "Authorization": authHeader,
-        "Accept": "application/json",
+        Authorization: authHeader,
+        Accept: "application/json",
         "Content-Type": "application/json",
       },
     });
@@ -73,14 +82,22 @@ export class AtlassianFetcher {
   /**
    * Handle API response errors
    */
-  private static handleApiError(response: Response, resourceType: string, resourceId: string): McpResult {
+  private static handleApiError(
+    response: Response,
+    resourceType: string,
+    resourceId: string
+  ): McpResult {
     if (response.status === 401) {
-      return this.createErrorResult("Authentication failed. Please check your ATLASSIAN_USER and ATLASSIAN_API_TOKEN");
+      return this.createErrorResult(
+        "Authentication failed. Please check your ATLASSIAN_USER and ATLASSIAN_API_TOKEN"
+      );
     }
     if (response.status === 404) {
       return this.createErrorResult(`${resourceType} not found: ${resourceId}`);
     }
-    return this.createErrorResult(`HTTP error: ${response.status} ${response.statusText}`);
+    return this.createErrorResult(
+      `HTTP error: ${response.status} ${response.statusText}`
+    );
   }
 
   /**
@@ -89,11 +106,11 @@ export class AtlassianFetcher {
   private static htmlToPlainText(htmlContent: string): string {
     const dom = new JSDOM(htmlContent);
     const document = dom.window.document;
-    
+
     // Remove scripts and styles
     this.removeElementsByTagName(document, "script");
     this.removeElementsByTagName(document, "style");
-    
+
     const textContent = document.body.textContent || "";
     return textContent.replace(/\s+/g, " ").trim();
   }
@@ -101,7 +118,11 @@ export class AtlassianFetcher {
   /**
    * Format Confluence page content
    */
-  private static formatConfluenceContent(page: ConfluencePage, url: string, maxLength?: number): string {
+  private static formatConfluenceContent(
+    page: ConfluencePage,
+    url: string,
+    maxLength?: number
+  ): string {
     const normalizedText = this.htmlToPlainText(page.htmlContent);
 
     return new ResponseBuilder()
@@ -116,7 +137,11 @@ export class AtlassianFetcher {
   /**
    * Format Jira ticket content
    */
-  private static formatJiraContent(ticket: JiraTicket, url: string, maxLength?: number): string {
+  private static formatJiraContent(
+    ticket: JiraTicket,
+    url: string,
+    maxLength?: number
+  ): string {
     const builder = new ResponseBuilder()
       .addField("Ticket", ticket.key)
       .addField("Title", ticket.summary)
@@ -132,16 +157,16 @@ export class AtlassianFetcher {
 
     // Add subtasks if available
     if (ticket.hasSubtasks) {
-      const subtaskItems = ticket.subtasks.map(subtask => 
-        `${subtask.key}: ${subtask.summary} (${subtask.status})`
+      const subtaskItems = ticket.subtasks.map(
+        subtask => `${subtask.key}: ${subtask.summary} (${subtask.status})`
       );
       builder.addNumberedList("Subtasks", subtaskItems);
     }
 
     // Add comments if available (latest 20)
     if (ticket.hasComments) {
-      const commentItems = ticket.comments.map(comment => 
-        `${comment.author} (${comment.created}):\n${comment.body}`
+      const commentItems = ticket.comments.map(
+        comment => `${comment.author} (${comment.created}):\n${comment.body}`
       );
       builder.addNumberedList("Recent Comments (Latest 20)", commentItems);
     }
@@ -152,16 +177,20 @@ export class AtlassianFetcher {
   /**
    * Fetch Confluence page content
    */
-  static async fetchConfluencePage(request: ConfluenceRequest): Promise<McpResult> {
+  static async fetchConfluencePage(
+    request: ConfluenceRequest
+  ): Promise<McpResult> {
     try {
       const domain = this.extractDomain(request.url);
-      
+
       // Extract page ID from Confluence URL
       const pageIdMatch = request.url.match(/\/pages\/(\d+)/);
       if (!pageIdMatch) {
-        return this.createErrorResult("Invalid Confluence URL format. Expected format: .../pages/{pageId}");
+        return this.createErrorResult(
+          "Invalid Confluence URL format. Expected format: .../pages/{pageId}"
+        );
       }
-      
+
       const pageId = pageIdMatch[1];
       const apiUrl = `${domain}/wiki/rest/api/content/${pageId}?expand=body.export_view,version,space`;
 
@@ -173,15 +202,14 @@ export class AtlassianFetcher {
 
       const data: IConfluenceApiResponse = await response.json();
       const page = new ConfluencePage(data);
-      
+
       const result = this.formatConfluenceContent(
-        page, 
-        request.url, 
+        page,
+        request.url,
         request.maxLength ?? this.DEFAULT_MAX_LENGTH
       );
-      
-      return McpResult.success(result);
 
+      return McpResult.success(result);
     } catch (error) {
       return this.createErrorResult((error as Error).message);
     }
@@ -193,13 +221,15 @@ export class AtlassianFetcher {
   static async fetchJiraTicket(request: JiraRequest): Promise<McpResult> {
     try {
       const domain = this.extractDomain(request.url);
-      
+
       // Extract ticket key from Jira URL
       const ticketKeyMatch = request.url.match(/\/browse\/([A-Z]+-\d+)/);
       if (!ticketKeyMatch) {
-        return this.createErrorResult("Invalid Jira URL format. Expected format: .../browse/{TICKET-KEY}");
+        return this.createErrorResult(
+          "Invalid Jira URL format. Expected format: .../browse/{TICKET-KEY}"
+        );
       }
-      
+
       const ticketKey = ticketKeyMatch[1];
       // Include comment in expand parameter to ensure comments are fetched
       const apiUrl = `${domain}/rest/api/3/issue/${ticketKey}?expand=names,schema,operations,editmeta,changelog,renderedFields,comment`;
@@ -212,15 +242,14 @@ export class AtlassianFetcher {
 
       const data: IJiraApiResponse = await response.json();
       const ticket = new JiraTicket(data);
-      
+
       const result = this.formatJiraContent(
-        ticket, 
-        request.url, 
+        ticket,
+        request.url,
         request.maxLength ?? this.DEFAULT_MAX_LENGTH
       );
-      
-      return McpResult.success(result);
 
+      return McpResult.success(result);
     } catch (error) {
       return this.createErrorResult((error as Error).message);
     }
@@ -229,7 +258,10 @@ export class AtlassianFetcher {
   /**
    * Helper method to remove elements by tag name
    */
-  private static removeElementsByTagName(document: Document, tagName: string): void {
+  private static removeElementsByTagName(
+    document: Document,
+    tagName: string
+  ): void {
     const elements = document.getElementsByTagName(tagName);
     Array.from(elements).forEach(element => element.remove());
   }

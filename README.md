@@ -16,12 +16,23 @@ This MCP server provides functionality to fetch web content and automatically re
 src/
 ├── slack/                   # Slack service integration
 │   ├── SlackTypes.ts       # Slack interface definitions (I prefix)
-│   ├── SlackModels.ts      # Slack model classes with business logic
-│   └── SlackFetcher.ts     # Slack API client and processing
+│   ├── SlackFetcher.ts     # Slack API client and processing
+│   └── model/              # Individual Slack model classes
+│       ├── SlackUser.ts
+│       ├── SlackReaction.ts
+│       ├── SlackAttachment.ts
+│       ├── SlackFile.ts
+│       ├── SlackMessage.ts
+│       ├── SlackMessageModel.ts
+│       ├── SlackConversationsHistoryResponse.ts
+│       ├── SlackConversationsRepliesResponse.ts
+│       └── SlackUsersInfoResponse.ts
 ├── atlassian/              # Atlassian service integration
-│   ├── AtlassianTypes.ts   # Atlassian interface definitions
-│   ├── AtlassianModels.ts  # Atlassian model classes with business logic
-│   └── AtlassianFetcher.ts # Atlassian API client and processing
+│   ├── AtlassianTypes.ts   # Atlassian interface definitions (I prefix)
+│   ├── AtlassianFetcher.ts # Atlassian API client and processing
+│   └── model/              # Individual Atlassian model classes
+│       ├── ConfluencePage.ts
+│       └── JiraTicket.ts
 ├── types.ts                # Common type definitions (IMcpResult)
 ├── McpModels.ts           # MCP result model (McpResult class)
 ├── constants.ts           # Application constants and configuration
@@ -35,6 +46,8 @@ src/
 
 - **Interface-Class Pattern**: Interfaces use "I" prefix, classes contain business logic
 - **Service Separation**: Each service has its own directory with types, models, and fetcher
+- **Individual Model Files**: Each model class is in its own file for better maintainability
+- **Direct Import Pattern**: Import models directly from their files, avoiding re-export layers
 - **Unified Results**: All services return `McpResult` with consistent `toJson()` interface
 - **Type Safety**: Strong TypeScript typing with proper error handling
 - **Modular Architecture**: Clear separation of concerns and easy extensibility
@@ -194,10 +207,11 @@ Or use the published package:
 
 ### Technical Features
 - **Type-Safe Architecture**: Full TypeScript support with proper interface definitions
-- **Modular Design**: Service-specific modules for easy maintenance and extension
-- **Unified Error Handling**: Consistent error responses across all services
-- **Performance Optimized**: Parallel API calls and efficient data processing
+- **Modular Design**: Service-specific modules with individual model files for easy maintenance
+- **Unified Error Handling**: Consistent error responses across all services via `McpResult`
+- **Performance Optimized**: Direct imports enable tree-shaking and faster compilation
 - **Security Focused**: Input validation and private IP blocking
+- **Maintainable Code**: Single responsibility principle with clear module boundaries
 
 ## Development
 
@@ -212,7 +226,7 @@ To add a new service integration:
 
 1. Create a new directory under `src/` (e.g., `src/github/`)
 2. Add type definitions with "I" prefix (e.g., `GitHubTypes.ts`)
-3. Create model classes with business logic (e.g., `GitHubModels.ts`)
+3. Create individual model classes in `model/` directory (e.g., `model/GitHubRepository.ts`)
 4. Implement the fetcher class (e.g., `GitHubFetcher.ts`)
 5. Add constants to `constants.ts`
 6. Add validation to `validate.ts`
@@ -223,6 +237,8 @@ To add a new service integration:
 
 - Follow the established Interface-Class pattern
 - Use "I" prefix for interfaces, no prefix for classes
+- Create individual files for each model class
+- Use direct imports from model files (avoid re-export layers)
 - Implement business logic in model classes, not fetchers
 - Return `McpResult` objects with `toJson()` method
 - Use proper TypeScript typing throughout
@@ -241,5 +257,5 @@ This project is licensed under the MIT License.
 ---
 
 **Last Updated**: 2025-08-22  
-**Version**: 2.0  
-**Architecture**: Modular TypeScript with Interface-Class Pattern
+**Version**: 2.1  
+**Architecture**: Modular TypeScript with Interface-Class Pattern and Individual Model Files

@@ -8,7 +8,10 @@ export class McpResult {
   private content: Array<{ type: "text"; text: string }>;
   private isError: boolean;
 
-  constructor(content: Array<{ type: "text"; text: string }>, isError: boolean = false) {
+  constructor(
+    content: Array<{ type: "text"; text: string }>,
+    isError: boolean = false
+  ) {
     this.content = content;
     this.isError = isError;
   }
@@ -62,7 +65,7 @@ export class McpResult {
   toJson() {
     return {
       content: this.content,
-      isError: this.isError
+      isError: this.isError,
     } satisfies IMcpResult;
   }
 
@@ -81,12 +84,15 @@ export class McpResult {
     isError: boolean;
     totalLength: number;
   } {
-    const totalLength = this.content.reduce((sum, item) => sum + item.text.length, 0);
-    
+    const totalLength = this.content.reduce(
+      (sum, item) => sum + item.text.length,
+      0
+    );
+
     return {
       contentCount: this.content.length,
       isError: this.isError,
-      totalLength
+      totalLength,
     };
   }
 }

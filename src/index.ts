@@ -6,7 +6,12 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { validateRequestPayload, validateConfluenceRequest, validateJiraRequest, validateSlackRequest } from "./validate.js";
+import {
+  validateRequestPayload,
+  validateConfluenceRequest,
+  validateJiraRequest,
+  validateSlackRequest,
+} from "./validate.js";
 import { Fetcher } from "./Fetcher.js";
 import { AtlassianFetcher } from "./atlassian/AtlassianFetcher.js";
 import { SlackFetcher } from "./slack/SlackFetcher.js";
@@ -22,7 +27,7 @@ const server = new Server(
       resources: {},
       tools: {},
     },
-  },
+  }
 );
 
 server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -30,7 +35,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     tools: [
       {
         name: Constants.FETCH,
-        description: "Fetch a website and return the content in the most appropriate format (text, JSON, or HTML)",
+        description:
+          "Fetch a website and return the content in the most appropriate format (text, JSON, or HTML)",
         inputSchema: {
           type: "object",
           properties: {
@@ -56,13 +62,15 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: Constants.FETCH_CONFLUENCE_PAGE,
-        description: "Fetch Confluence page content using Atlassian API. Requires ATLASSIAN_USER and ATLASSIAN_API_TOKEN environment variables.",
+        description:
+          "Fetch Confluence page content using Atlassian API. Requires ATLASSIAN_USER and ATLASSIAN_API_TOKEN environment variables.",
         inputSchema: {
           type: "object",
           properties: {
             url: {
               type: "string",
-              description: "Confluence page URL (e.g., https://your-domain.atlassian.net/wiki/spaces/SPACE/pages/123456/Page+Title)",
+              description:
+                "Confluence page URL (e.g., https://your-domain.atlassian.net/wiki/spaces/SPACE/pages/123456/Page+Title)",
             },
             maxLength: {
               type: "number",
@@ -74,13 +82,15 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: Constants.FETCH_JIRA_ISSUE,
-        description: "Fetch Jira issue ticket information using Atlassian API. Requires ATLASSIAN_USER and ATLASSIAN_API_TOKEN environment variables.",
+        description:
+          "Fetch Jira issue ticket information using Atlassian API. Requires ATLASSIAN_USER and ATLASSIAN_API_TOKEN environment variables.",
         inputSchema: {
           type: "object",
           properties: {
             url: {
               type: "string",
-              description: "Jira ticket URL (e.g., https://your-domain.atlassian.net/browse/TICKET-123)",
+              description:
+                "Jira ticket URL (e.g., https://your-domain.atlassian.net/browse/TICKET-123)",
             },
             maxLength: {
               type: "number",
@@ -92,13 +102,15 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: Constants.FETCH_SLACK_MESSAGE,
-        description: "Fetch Slack message information using Slack Web API. Requires SLACK_APP_USER_OAUTH_TOKEN environment variable.",
+        description:
+          "Fetch Slack message information using Slack Web API. Requires SLACK_APP_USER_OAUTH_TOKEN environment variable.",
         inputSchema: {
           type: "object",
           properties: {
             url: {
               type: "string",
-              description: "Slack message URL (e.g., https://your-workspace.slack.com/archives/CHANNEL_ID/pTIMESTAMP)",
+              description:
+                "Slack message URL (e.g., https://your-workspace.slack.com/archives/CHANNEL_ID/pTIMESTAMP)",
             },
             maxLength: {
               type: "number",
@@ -112,7 +124,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   };
 });
 
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
+server.setRequestHandler(CallToolRequestSchema, async request => {
   const { name, arguments: args } = request.params;
 
   if (request.params.name === Constants.FETCH) {
@@ -124,7 +136,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   if (request.params.name === Constants.FETCH_CONFLUENCE_PAGE) {
     const validatedArgs = validateConfluenceRequest(args);
-    const confluenceResult = await AtlassianFetcher.fetchConfluencePage(validatedArgs);
+    const confluenceResult =
+      await AtlassianFetcher.fetchConfluencePage(validatedArgs);
 
     return confluenceResult.toJson();
   }
@@ -142,7 +155,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     return slackResult.toJson();
   }
-  
+
   throw new Error("Tool not found");
 });
 
@@ -151,7 +164,7 @@ async function main() {
   await server.connect(transport);
 }
 
-main().catch((error) => {
+main().catch(error => {
   console.error("Fatal error in main():", error);
   process.exit(1);
 });

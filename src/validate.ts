@@ -4,8 +4,8 @@ import { ISlackRequest } from "./slack/SlackTypes.js";
 import { Constants } from "./constants.js";
 
 // Base validation function that can be curried for optional validation
-function validateObject(args: any, fieldName: string = 'arguments'): void {
-  if (!args || typeof args !== 'object') {
+function validateObject(args: any, fieldName: string = "arguments"): void {
+  if (!args || typeof args !== "object") {
     throw new Error(`Invalid ${fieldName}: must be an object`);
   }
 }
@@ -24,13 +24,13 @@ function createOptionalValidator<T>(
 
 // Base validators
 function validateRequiredString(value: any, fieldName: string): string {
-  if (!value || typeof value !== 'string') {
+  if (!value || typeof value !== "string") {
     throw new Error(`Invalid ${fieldName}: must be a string`);
   }
   return value;
 }
 
-function validateUrl(url: string, fieldName: string = 'url'): void {
+function validateUrl(url: string, fieldName: string = "url"): void {
   try {
     new URL(url);
   } catch {
@@ -38,22 +38,25 @@ function validateUrl(url: string, fieldName: string = 'url'): void {
   }
 }
 
-function validateObjectType(value: any, fieldName: string): Record<string, string> {
-  if (typeof value !== 'object' || value === null) {
+function validateObjectType(
+  value: any,
+  fieldName: string
+): Record<string, string> {
+  if (typeof value !== "object" || value === null) {
     throw new Error(`Invalid ${fieldName}: must be an object`);
   }
   return value;
 }
 
 function validatePositiveNumber(value: any, fieldName: string): number {
-  if (typeof value !== 'number' || value < 1) {
+  if (typeof value !== "number" || value < 1) {
     throw new Error(`Invalid ${fieldName}: must be a positive number`);
   }
   return value;
 }
 
 function validateNonNegativeNumber(value: any, fieldName: string): number {
-  if (typeof value !== 'number' || value < 0) {
+  if (typeof value !== "number" || value < 0) {
     throw new Error(`Invalid ${fieldName}: must be a non-negative number`);
   }
   return value;
@@ -61,8 +64,12 @@ function validateNonNegativeNumber(value: any, fieldName: string): number {
 
 // Create optional validators using curry pattern
 const validateOptionalObject = createOptionalValidator(validateObjectType);
-const validateOptionalPositiveNumber = createOptionalValidator(validatePositiveNumber);
-const validateOptionalNonNegativeNumber = createOptionalValidator(validateNonNegativeNumber);
+const validateOptionalPositiveNumber = createOptionalValidator(
+  validatePositiveNumber
+);
+const validateOptionalNonNegativeNumber = createOptionalValidator(
+  validateNonNegativeNumber
+);
 
 // Helper function to provide default values for optional fields
 function withDefault<T>(value: T | undefined, defaultValue: T): T {
@@ -72,50 +79,65 @@ function withDefault<T>(value: T | undefined, defaultValue: T): T {
 // Main validation functions using curried validators
 export function validateRequestPayload(args: any): RequestPayload {
   validateObject(args);
-  
-  const url = validateRequiredString(args.url, 'url');
+
+  const url = validateRequiredString(args.url, "url");
   validateUrl(url);
-  
+
   return {
     url,
-    headers: validateOptionalObject(args.headers, 'headers'),
-    max_length: withDefault(validateOptionalPositiveNumber(args.max_length, 'max_length'), Constants.DEFAULT_MAX_LENGTH),
-    start_index: withDefault(validateOptionalNonNegativeNumber(args.start_index, 'start_index'), Constants.DEFAULT_START_INDEX),
+    headers: validateOptionalObject(args.headers, "headers"),
+    max_length: withDefault(
+      validateOptionalPositiveNumber(args.max_length, "max_length"),
+      Constants.DEFAULT_MAX_LENGTH
+    ),
+    start_index: withDefault(
+      validateOptionalNonNegativeNumber(args.start_index, "start_index"),
+      Constants.DEFAULT_START_INDEX
+    ),
   };
 }
 
 export function validateConfluenceRequest(args: any): ConfluenceRequest {
   validateObject(args);
-  
-  const url = validateRequiredString(args.url, 'url');
+
+  const url = validateRequiredString(args.url, "url");
   validateUrl(url);
-  
+
   return {
     url,
-    maxLength: withDefault(validateOptionalPositiveNumber(args.maxLength, 'maxLength'), Constants.DEFAULT_MAX_LENGTH),
+    maxLength: withDefault(
+      validateOptionalPositiveNumber(args.maxLength, "maxLength"),
+      Constants.DEFAULT_MAX_LENGTH
+    ),
   };
 }
 
 export function validateJiraRequest(args: any): JiraRequest {
   validateObject(args);
-  
-  const url = validateRequiredString(args.url, 'url');
+
+  const url = validateRequiredString(args.url, "url");
   validateUrl(url);
-  
+
   return {
     url,
-    maxLength: withDefault(validateOptionalPositiveNumber(args.maxLength, 'maxLength'), Constants.DEFAULT_MAX_LENGTH),
+    maxLength: withDefault(
+      validateOptionalPositiveNumber(args.maxLength, "maxLength"),
+      Constants.DEFAULT_MAX_LENGTH
+    ),
   };
 }
 
 export function validateSlackRequest(args: any): ISlackRequest {
   validateObject(args);
-  
-  const url = validateRequiredString(args.url, 'url');
+
+  const url = validateRequiredString(args.url, "url");
   validateUrl(url);
-  
+
   return {
     url,
-    maxLength: withDefault(validateOptionalPositiveNumber(args.maxLength, 'maxLength'), Constants.DEFAULT_MAX_LENGTH),
+    maxLength: withDefault(
+      validateOptionalPositiveNumber(args.maxLength, "maxLength"),
+      Constants.DEFAULT_MAX_LENGTH
+    ),
   };
 }

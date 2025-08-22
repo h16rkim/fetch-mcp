@@ -98,7 +98,7 @@ export class SlackAttachment {
   getFormattedFields(): Array<{ title: string; value: string }> {
     return this.fields.map(field => ({
       title: field.title,
-      value: field.value
+      value: field.value,
     }));
   }
 }

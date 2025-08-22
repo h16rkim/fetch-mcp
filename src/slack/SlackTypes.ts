@@ -5,7 +5,7 @@
 export interface ISlackRequest {
   url: string;
   maxLength?: number;
-};
+}
 
 // Slack API Response Types
 export interface ISlackUser {

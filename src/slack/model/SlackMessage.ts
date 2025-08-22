@@ -93,14 +93,16 @@ export class SlackMessage {
     if (!this.hasReactions) {
       return "";
     }
-    return this.reactions.map(reaction => reaction.formattedReaction).join(' ');
+    return this.reactions.map(reaction => reaction.formattedReaction).join(" ");
   }
 
   get attachments(): SlackAttachment[] {
     if (!this._data.attachments) {
       return [];
     }
-    return this._data.attachments.map(attachment => new SlackAttachment(attachment));
+    return this._data.attachments.map(
+      attachment => new SlackAttachment(attachment)
+    );
   }
 
   get hasAttachments(): boolean {
@@ -128,7 +130,9 @@ export class SlackMessage {
     }
     return {
       user: this._data.edited.user,
-      timestamp: new Date(parseFloat(this._data.edited.ts) * 1000).toISOString()
+      timestamp: new Date(
+        parseFloat(this._data.edited.ts) * 1000
+      ).toISOString(),
     };
   }
 
@@ -183,7 +187,7 @@ export class SlackMessage {
       fromUrl: attachment.fromUrl,
       serviceName: attachment.serviceName,
       authorName: attachment.authorName,
-      fields: attachment.getFormattedFields()
+      fields: attachment.getFormattedFields(),
     }));
   }
 
@@ -212,7 +216,7 @@ export class SlackMessage {
       isEdited: this.isEdited,
       isStarred: this.isStarred,
       isPinned: this.isPinned,
-      isBot: this.isBot
+      isBot: this.isBot,
     };
   }
 }

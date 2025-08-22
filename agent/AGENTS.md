@@ -11,12 +11,23 @@
 src/
 ├── slack/                   # Slack 관련 파일들
 │   ├── SlackTypes.ts       # Slack 타입 정의 (I prefix)
-│   ├── SlackModels.ts      # Slack 모델 클래스들
-│   └── SlackFetcher.ts     # Slack API 처리
+│   ├── SlackFetcher.ts     # Slack API 처리
+│   └── model/              # Slack 모델 클래스들 (개별 파일)
+│       ├── SlackUser.ts
+│       ├── SlackReaction.ts
+│       ├── SlackAttachment.ts
+│       ├── SlackFile.ts
+│       ├── SlackMessage.ts
+│       ├── SlackMessageModel.ts
+│       ├── SlackConversationsHistoryResponse.ts
+│       ├── SlackConversationsRepliesResponse.ts
+│       └── SlackUsersInfoResponse.ts
 ├── atlassian/              # Atlassian 관련 파일들
-│   ├── AtlassianTypes.ts   # Atlassian 타입 정의
-│   ├── AtlassianModels.ts  # Atlassian 모델 클래스들
-│   └── AtlassianFetcher.ts # Atlassian API 처리
+│   ├── AtlassianTypes.ts   # Atlassian 타입 정의 (I prefix)
+│   ├── AtlassianFetcher.ts # Atlassian API 처리
+│   └── model/              # Atlassian 모델 클래스들 (개별 파일)
+│       ├── ConfluencePage.ts
+│       └── JiraTicket.ts
 ├── types.ts                # 공통 타입 정의 (IMcpResult)
 ├── McpModels.ts           # MCP 결과 모델 (McpResult)
 ├── constants.ts           # 상수 정의 (tool 이름, 기본값)
@@ -31,6 +42,35 @@ src/
 2. **fetch_confluence_page**: Confluence 페이지 조회
 3. **fetch_jira_issue**: Jira 티켓 조회  
 4. **fetch_slack_message**: Slack 메시지 조회
+
+## 🤖 AI Agent 작업 가이드
+
+### 필수 참고 문서
+
+AI Agent가 이 프로젝트에서 작업을 수행할 때는 **반드시** 다음 문서를 먼저 읽고 작업해야 합니다:
+
+#### 📋 [agent/rules/agent-workflow.md](./rules/agent-workflow.md)
+- **AI Agent Workflow**: 코드 작성부터 검증까지의 전체 워크플로우
+- **Verification Loop**: TypeScript 컴파일, 린트, 수동 리뷰 단계
+- **Error Handling**: 에러 발생 시 처리 방법 및 반복 규칙
+- **Architecture Compliance**: 프로젝트 특화 패턴 준수 체크
+- **Documentation Update**: 작업 완료 후 문서 업데이트 절차
+
+### 작업 전 체크리스트
+
+1. ✅ **agent-workflow.md 문서 숙지**: 전체 워크플로우 이해
+2. ✅ **AGENTS.md 코딩 컨벤션 확인**: 해당 파일 타입별 규칙 검토
+3. ✅ **기존 코드 패턴 분석**: 유사한 기존 코드 구조 참고
+4. ✅ **아키텍처 준수**: Interface-Class 패턴, 직접 Import 등
+
+### 주요 원칙
+
+- **Interface-Class Pattern**: "I" prefix 인터페이스 + 비즈니스 로직 클래스
+- **Individual Model Files**: 각 모델을 개별 파일로 분리
+- **Direct Import Pattern**: re-export 레이어 없이 직접 import
+- **McpResult Consistency**: 모든 Fetcher에서 통일된 결과 타입 사용
+- **Documentation First**: 작업 완료 후 반드시 문서 업데이트
+
 
 ## 🎯 코딩 컨벤션 및 아키텍처 교훈 (2025-08-22 업데이트)
 
@@ -339,24 +379,114 @@ src/
 - 외부 의존성과 강결합
 - 테스트하기 어려운 복잡한 메서드
 
-## 🚀 향후 확장 방향
+### 11. 모듈 분리 및 파일 구조화 (Module Separation & File Organization)
 
-### 1. 새로운 서비스 통합
-- GitHub (Repository, Issue, PR 조회)
-- Notion (페이지 조회)
-- Google Drive (문서 조회)
-- Trello (카드 조회)
+#### ✅ 해야 할 것
+- **개별 모델 파일 분리**
+  ```typescript
+  // Good: 각 모델을 개별 파일로 분리
+  src/slack/model/
+  ├── SlackUser.ts        # 단일 책임: 사용자 모델
+  ├── SlackMessage.ts     # 단일 책임: 메시지 모델
+  └── SlackReaction.ts    # 단일 책임: 반응 모델
+  
+  // Bad: 모든 모델을 하나의 파일에
+  src/slack/SlackModels.ts  # 1000+ 줄의 거대한 파일
+  ```
 
-### 2. 기능 개선
-- 캐싱 레이어 추가
-- Rate limiting 구현
-- 배치 요청 지원
-- 웹훅 지원
+- **직접 Import 패턴**
+  ```typescript
+  // Good: 필요한 모델만 직접 import
+  import { SlackUser } from "./model/SlackUser.js";
+  import { SlackMessage } from "./model/SlackMessage.js";
+  
+  // Bad: 중간 레이어를 통한 re-export
+  import { SlackUser, SlackMessage } from "./SlackModels.js";
+  ```
 
-### 3. 모니터링 및 로깅
-- 구조화된 로깅
-- 메트릭 수집
-- 에러 추적
+- **명확한 의존성 관리**
+  ```typescript
+  // Good: 각 모델 파일에서 필요한 의존성만 import
+  // SlackMessage.ts
+  import { ISlackMessage } from "../SlackTypes.js";
+  import { SlackReaction } from "./SlackReaction.js";
+  import { SlackAttachment } from "./SlackAttachment.js";
+  ```
+
+#### ❌ 피해야 할 것
+- 거대한 모델 파일 (1000+ 줄)
+- 불필요한 re-export 레이어
+- 순환 의존성 생성
+- 모든 모델을 한 번에 import
+
+### 12. 결과 타입 통합 및 표준화 (Result Type Unification)
+
+#### ✅ 해야 할 것
+- **공통 결과 타입 사용**
+  ```typescript
+  // Good: 모든 Fetcher가 동일한 결과 타입 사용
+  export class McpResult {
+    toJson(): IMcpResult { ... }
+    static success(text: string): McpResult { ... }
+    static error(message: string): McpResult { ... }
+  }
+  
+  // 모든 Fetcher에서 사용
+  SlackFetcher.fetchSlackMessage(): Promise<McpResult>
+  AtlassianFetcher.fetchConfluencePage(): Promise<McpResult>
+  Fetcher.doFetch(): Promise<McpResult>
+  ```
+
+- **일관된 에러 처리**
+  ```typescript
+  // Good: 모든 Fetcher에서 동일한 패턴
+  private static createErrorResult(message: string): McpResult {
+    return McpResult.error(message);
+  }
+  ```
+
+- **통합된 응답 처리**
+  ```typescript
+  // Good: index.ts에서 일관된 처리
+  const result = await SomeFetcher.someMethod();
+  const json = result.toJson(); // IMcpResult
+  return { content: json.content, isError: json.isError };
+  ```
+
+#### ❌ 피해야 할 것
+- 서비스별로 다른 결과 타입 사용
+- 중복된 에러 처리 로직
+- 일관성 없는 응답 형식
+
+### 13. 코드 중복 제거 및 리팩토링 (Code Deduplication & Refactoring)
+
+#### ✅ 해야 할 것
+- **사용하지 않는 코드 제거**
+  ```typescript
+  // Good: 실제로 사용되지 않는 메서드 제거
+  // SlackFetcher에서 getMessageReplies() 메서드 제거
+  
+  // Bad: 사용하지 않는 코드를 그대로 유지
+  private static getMessageReplies() { /* 사용되지 않음 */ }
+  ```
+
+- **중복 타입 통합**
+  ```typescript
+  // Good: 동일한 구조의 타입을 하나로 통합
+  interface IMcpResult {
+    content: Array<{ type: "text"; text: string }>;
+    isError: boolean;
+  }
+  
+  // Bad: 서비스별로 동일한 구조의 타입 중복 정의
+  interface SlackResult { content: ..., isError: ... }
+  interface AtlassianResult { content: ..., isError: ... }
+  ```
+
+#### ❌ 피해야 할 것
+- 죽은 코드(Dead Code) 방치
+- 동일한 로직의 중복 구현
+- 일관성 없는 네이밍
 
 ## 📚 참고 자료
 
@@ -367,6 +497,7 @@ src/
 
 ---
 
+
 **마지막 업데이트**: 2025-08-22  
 **작성자**: AI Assistant  
-**버전**: 2.0
+**버전**: 2.1

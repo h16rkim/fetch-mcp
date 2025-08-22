@@ -32,7 +32,7 @@ export class SlackConversationsHistoryResponse {
       return undefined;
     }
     return {
-      nextCursor: this.data.response_metadata.next_cursor
+      nextCursor: this.data.response_metadata.next_cursor,
     };
   }
 

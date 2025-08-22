@@ -24,7 +24,7 @@ export class SlackFile {
   }
 
   get displayName(): string {
-    return this.name || this.title || 'Unnamed file';
+    return this.name || this.title || "Unnamed file";
   }
 
   get mimetype(): string | undefined {
@@ -94,7 +94,7 @@ export class SlackFile {
     return {
       name: this.displayName,
       info: this.formattedFileInfo,
-      url: this.permalink
+      url: this.permalink,
     };
   }
 }

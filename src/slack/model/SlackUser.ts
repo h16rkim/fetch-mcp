@@ -48,12 +48,14 @@ export class SlackUser {
    * Priority: profile.display_name > display_name > profile.real_name > real_name > name > "Unknown User"
    */
   get bestDisplayName(): string {
-    return this._data.profile?.display_name || 
-           this._data.display_name || 
-           this._data.profile?.real_name || 
-           this._data.real_name || 
-           this._data.name || 
-           "Unknown User";
+    return (
+      this._data.profile?.display_name ||
+      this._data.display_name ||
+      this._data.profile?.real_name ||
+      this._data.real_name ||
+      this._data.name ||
+      "Unknown User"
+    );
   }
 
   /**
@@ -62,7 +64,7 @@ export class SlackUser {
   get fullName(): string {
     const firstName = this._data.profile?.first_name;
     const lastName = this._data.profile?.last_name;
-    
+
     if (firstName && lastName) {
       return `${firstName} ${lastName}`;
     } else if (firstName) {
@@ -70,7 +72,7 @@ export class SlackUser {
     } else if (lastName) {
       return lastName;
     }
-    
+
     return this.bestDisplayName;
   }
 
@@ -94,7 +96,7 @@ export class SlackUser {
       id: this.id,
       bestDisplayName: this.bestDisplayName,
       realName: this.realName,
-      hasProfile: this.hasProfile
+      hasProfile: this.hasProfile,
     };
   }
 }

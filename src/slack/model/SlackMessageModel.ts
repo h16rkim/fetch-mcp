@@ -128,7 +128,11 @@ export class SlackMessageModel {
     return this.replies.length > 0;
   }
 
-  get formattedReplies(): Array<{ author: string; text: string; timestamp: string }> {
+  get formattedReplies(): Array<{
+    author: string;
+    text: string;
+    timestamp: string;
+  }> {
     if (!this.hasReplies) {
       return [];
     }
@@ -136,7 +140,7 @@ export class SlackMessageModel {
     return this.replies.map(reply => ({
       author: reply.user || "Unknown User",
       text: reply.text,
-      timestamp: reply.formattedTimestamp
+      timestamp: reply.formattedTimestamp,
     }));
   }
 
@@ -205,7 +209,7 @@ export class SlackMessageModel {
       hasReactions: messageSummary.hasReactions,
       hasAttachments: messageSummary.hasAttachments,
       hasFiles: messageSummary.hasFiles,
-      isReply: this.isReply
+      isReply: this.isReply,
     };
   }
 }

@@ -43,12 +43,12 @@ export class ResponseBuilder {
     if (items.length === 0) {
       return this;
     }
-    
+
     let listContent = `\n${header}:\n`;
     items.forEach((item, index) => {
       listContent += `${index + 1}. ${item}\n`;
     });
-    
+
     this.sections.push(listContent.trimEnd());
     return this;
   }
@@ -60,12 +60,12 @@ export class ResponseBuilder {
     if (items.length === 0) {
       return this;
     }
-    
+
     let listContent = `\n${header}:\n`;
     items.forEach(item => {
       listContent += `- ${item}\n`;
     });
-    
+
     this.sections.push(listContent.trimEnd());
     return this;
   }
@@ -74,7 +74,7 @@ export class ResponseBuilder {
    * Add a line break
    */
   addLineBreak(): ResponseBuilder {
-    this.sections.push('');
+    this.sections.push("");
     return this;
   }
 
@@ -109,7 +109,11 @@ export class ResponseBuilder {
   /**
    * Add a conditional section (only if content is truthy)
    */
-  addSectionIf(condition: boolean, header: string, content: string): ResponseBuilder {
+  addSectionIf(
+    condition: boolean,
+    header: string,
+    content: string
+  ): ResponseBuilder {
     if (condition) {
       this.addSection(header, content);
     }
@@ -120,12 +124,12 @@ export class ResponseBuilder {
    * Build the final string
    */
   build(maxLength?: number): string {
-    const result = this.sections.join('\n');
-    
+    const result = this.sections.join("\n");
+
     if (maxLength && result.length > maxLength) {
       return result.substring(0, maxLength);
     }
-    
+
     return result;
   }
 
