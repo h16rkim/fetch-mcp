@@ -247,7 +247,7 @@ To add a new service integration:
 ## Publish
 
 ```bash
-pnpm publish --access=public
+npm publish --access=public
 ```
 
 ## License
