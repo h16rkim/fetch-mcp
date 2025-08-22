@@ -131,10 +131,20 @@ export class SlackFetcher {
 
       // Skip the first message (original message) and get replies
       const replies = data.messages.slice(1);
-      let repliesText = "\n\nReplies:\n";
       
+      // Extract unique user IDs from replies
+      const uniqueUserIds = [...new Set(replies.map(reply => reply.user).filter(userId => Boolean(userId)))] as string[];
+
+      // Fetch all user information in parallel
+      const userInfos = await Promise.all(uniqueUserIds.map(userId =>
+        this.getUserInfo(accessToken, userId).then(userName => ({ userId, userName }))
+      ));
+      
+      // Build replies text with user information from the map
+      let repliesText = "\n\nReplies:\n";
       for (const reply of replies) {
-        const userName = await this.getUserInfo(accessToken, reply.user || "Unknown");
+        const userInfo = userInfos.find(info => info.userId === reply.user);
+        const userName = userInfo?.userName ?? "Unknown User";
         const replyText = reply.text || "No content";
         const replyTime = reply.ts ? new Date(parseFloat(reply.ts) * 1000).toISOString() : "Unknown time";
         
