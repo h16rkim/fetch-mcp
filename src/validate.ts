@@ -1,6 +1,6 @@
 import { RequestPayload } from "./types.js";
 import { ConfluenceRequest, JiraRequest } from "./atlassian/AtlassianTypes.js";
-import { SlackRequest } from "./slack/SlackTypes.js";
+import { ISlackRequest } from "./slack/SlackTypes.js";
 import { Constants } from "./constants.js";
 
 // Base validation function that can be curried for optional validation
@@ -108,7 +108,7 @@ export function validateJiraRequest(args: any): JiraRequest {
   };
 }
 
-export function validateSlackRequest(args: any): SlackRequest {
+export function validateSlackRequest(args: any): ISlackRequest {
   validateObject(args);
   
   const url = validateRequiredString(args.url, 'url');

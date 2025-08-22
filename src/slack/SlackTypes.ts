@@ -2,7 +2,7 @@
  * Slack API Types and Interfaces
  */
 
-export type SlackRequest = {
+export interface ISlackRequest {
   url: string;
   maxLength?: number;
 };
@@ -121,13 +121,4 @@ export interface ISlackUsersInfoResponse {
   ok: boolean;
   user?: ISlackUser;
   error?: string;
-}
-
-export interface ISlackApiResponse {
-  message: ISlackMessage;
-  user?: ISlackUser;
-  channel: string;
-  isReply: boolean;
-  threadTs?: string;
-  replies?: ISlackMessage[];
 }

@@ -1,7 +1,8 @@
 import { JSDOM } from "jsdom";
-import { ConfluenceRequest, JiraRequest } from "./AtlassianTypes.js";
+import { ConfluenceRequest, JiraRequest, IConfluenceApiResponse, IJiraApiResponse } from "./AtlassianTypes.js";
 import { Constants } from "../constants.js";
-import { ConfluencePage, JiraTicket, ConfluenceApiResponse, JiraApiResponse } from "./AtlassianModels.js";
+import { ConfluencePage } from "./model/ConfluencePage.js";
+import { JiraTicket } from "./model/JiraTicket.js";
 import { ResponseBuilder } from "../ResponseBuilder.js";
 import { McpResult } from "../McpModels.js";
 
@@ -170,7 +171,7 @@ export class AtlassianFetcher {
         return this.handleApiError(response, "Confluence page", pageId);
       }
 
-      const data: ConfluenceApiResponse = await response.json();
+      const data: IConfluenceApiResponse = await response.json();
       const page = new ConfluencePage(data);
       
       const result = this.formatConfluenceContent(
@@ -209,7 +210,7 @@ export class AtlassianFetcher {
         return this.handleApiError(response, "Jira ticket", ticketKey);
       }
 
-      const data: JiraApiResponse = await response.json();
+      const data: IJiraApiResponse = await response.json();
       const ticket = new JiraTicket(data);
       
       const result = this.formatJiraContent(
