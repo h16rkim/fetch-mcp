@@ -31,10 +31,11 @@ export class SlackFetcher {
   }
 
   /**
-   * Parse Slack message URL to extract channel and timestamp
+   * Parse Slack message URL to extract channel, timestamp, and thread info
    */
-  private static parseSlackUrl(url: string): { channel: string; timestamp: string } {
+  private static parseSlackUrl(url: string): { channel: string; timestamp: string; threadTs?: string; isReply: boolean } {
     // URL format: https://inflab-team.slack.com/archives/C05PE858KM3/p1755772660352549
+    // Reply URL format: https://inflab-team.slack.com/archives/C04PDK00Z6G/p1755850522927879?thread_ts=1755849456.239589&cid=C04PDK00Z6G
     const urlMatch = url.match(/\/archives\/([A-Z0-9]+)\/p(\d+)/);
     
     if (!urlMatch) {
@@ -47,7 +48,17 @@ export class SlackFetcher {
     // Convert timestamp format (remove 'p' prefix and add decimal point)
     const formattedTimestamp = timestamp.substring(0, 10) + '.' + timestamp.substring(10);
     
-    return { channel, timestamp: formattedTimestamp };
+    // Check if this is a reply URL by looking for thread_ts parameter
+    const urlObj = new URL(url);
+    const threadTs = urlObj.searchParams.get('thread_ts');
+    const isReply = Boolean(threadTs);
+    
+    return { 
+      channel, 
+      timestamp: formattedTimestamp, 
+      threadTs: threadTs || undefined,
+      isReply 
+    };
   }
 
   /**
@@ -104,6 +115,36 @@ export class SlackFetcher {
              "Unknown User";
     } catch {
       return "Unknown User";
+    }
+  }
+
+  /**
+   * Get specific reply message from thread
+   */
+  private static async getSpecificReply(accessToken: string, channel: string, threadTs: string, replyTs: string): Promise<SlackMessage | null> {
+    try {
+      const response = await fetch(`https://slack.com/api/conversations.replies?channel=${channel}&ts=${threadTs}`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const data: SlackConversationsRepliesResponse = await response.json();
+      
+      if (!data.ok || !data.messages) {
+        return null;
+      }
+
+      // Find the specific reply message by timestamp
+      const replyMessage = data.messages.find(msg => msg.ts === replyTs);
+      return replyMessage || null;
+    } catch {
+      return null;
     }
   }
 
@@ -238,34 +279,50 @@ export class SlackFetcher {
   static async fetchSlackMessage(request: SlackRequest): Promise<SlackResult> {
     try {
       const accessToken = this.getAccessToken();
-      const { channel, timestamp } = this.parseSlackUrl(request.url);
+      const { channel, timestamp, threadTs, isReply } = this.parseSlackUrl(request.url);
       
-      // Get message information
-      const response = await fetch(`https://slack.com/api/conversations.history?channel=${channel}&latest=${timestamp}&limit=1&inclusive=true`, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      let message: SlackMessage;
+      let messageContext = "";
 
-      if (!response.ok) {
-        if (response.status === 401) {
-          return this.createErrorResult("Authentication failed. Please check your SLACK_APP_USER_OAUTH_TOKEN");
+      if (isReply && threadTs) {
+        // This is a reply URL, fetch the specific reply message
+        const replyMessage = await this.getSpecificReply(accessToken, channel, threadTs, timestamp);
+        
+        if (!replyMessage) {
+          return this.createErrorResult("Reply message not found");
         }
-        return this.createErrorResult(`HTTP error: ${response.status} ${response.statusText}`);
-      }
+        
+        message = replyMessage;
+        messageContext = "Reply to Thread";
+      } else {
+        // This is a regular message URL, fetch the message
+        const response = await fetch(`https://slack.com/api/conversations.history?channel=${channel}&latest=${timestamp}&limit=1&inclusive=true`, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        });
 
-      const data: SlackConversationsHistoryResponse = await response.json();
-      
-      if (!data.ok) {
-        return this.createErrorResult(`Slack API error: ${data.error || 'Unknown error'}`);
-      }
+        if (!response.ok) {
+          if (response.status === 401) {
+            return this.createErrorResult("Authentication failed. Please check your SLACK_APP_USER_OAUTH_TOKEN");
+          }
+          return this.createErrorResult(`HTTP error: ${response.status} ${response.statusText}`);
+        }
 
-      if (!data.messages || data.messages.length === 0) {
-        return this.createErrorResult("Message not found");
-      }
+        const data: SlackConversationsHistoryResponse = await response.json();
+        
+        if (!data.ok) {
+          return this.createErrorResult(`Slack API error: ${data.error || 'Unknown error'}`);
+        }
 
-      const message: SlackMessage = data.messages[0];
+        if (!data.messages || data.messages.length === 0) {
+          return this.createErrorResult("Message not found");
+        }
+
+        message = data.messages[0];
+        messageContext = "Original Message";
+      }
       
       // Get user information
       const userName = await this.getUserInfo(accessToken, message.user || "Unknown");
@@ -281,8 +338,8 @@ export class SlackFetcher {
       // Get thread info
       const threadInfo = message.thread_ts ? `\nThread: Yes (${message.reply_count || 0} replies)` : "";
       
-      // Get replies
-      const repliesText = await this.getMessageReplies(accessToken, channel, timestamp);
+      // Get replies only for original messages (not for reply messages)
+      const repliesText = !isReply ? await this.getMessageReplies(accessToken, channel, message.ts || timestamp) : "";
       
       // Format reactions
       const reactionsText = this.formatReactions(message.reactions);
@@ -303,11 +360,14 @@ export class SlackFetcher {
         });
       }
 
-      const result = `Slack Message Information:
+      // Add thread context for reply messages
+      const threadContextText = isReply && threadTs ? `\nOriginal Thread Timestamp: ${threadTs}` : "";
+
+      const result = `Slack ${messageContext} Information:
 Channel: ${channel}
 Timestamp: ${messageTime}
 Author: ${userName}
-Type: ${messageType}${messageSubtype}${threadInfo}
+Type: ${messageType}${messageSubtype}${threadInfo}${threadContextText}
 URL: ${request.url}
 
 Message:
