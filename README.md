@@ -33,6 +33,23 @@ src/
 │   └── model/              # Individual Atlassian model classes
 │       ├── ConfluencePage.ts
 │       └── JiraTicket.ts
+├── github/                 # GitHub service integration
+│   ├── GitHubTypes.ts      # GitHub interface definitions (I prefix)
+│   ├── GitHubFetcher.ts    # GitHub API client and processing
+│   └── model/              # Individual GitHub model classes
+│       ├── GitHubUser.ts
+│       ├── GitHubFile.ts
+│       ├── GitHubComment.ts
+│       ├── GitHubReview.ts
+│       ├── GitHubCommit.ts
+│       ├── GitHubPullRequest.ts
+│       ├── GitHubPullRequestModel.ts
+│       ├── GitHubPullRequestResponse.ts
+│       ├── GitHubFilesResponse.ts
+│       ├── GitHubCommentsResponse.ts
+│       ├── GitHubReviewsResponse.ts
+│       ├── GitHubCommitsResponse.ts
+│       └── GitHubReviewCommentsResponse.ts
 ├── types.ts                # Common type definitions (IMcpResult)
 ├── McpModels.ts           # MCP result model (McpResult class)
 ├── constants.ts           # Application constants and configuration
@@ -102,6 +119,22 @@ src/
     - File attachments (if available)
   - Supports both regular messages and thread replies
 
+- **fetch_github_pull_request**
+  - Fetch GitHub Pull Request information using GitHub API
+  - Requires `GITHUB_ACCESS_TOKEN` environment variable
+  - Input:
+    - `url` (string, required): GitHub Pull Request URL (e.g., https://github.com/owner/repo/pull/123)
+  - Returns comprehensive Pull Request information including:
+    - PR title, description, status, and metadata
+    - Author, assignees, and requested reviewers
+    - Branch information (head and base)
+    - Labels and milestone information
+    - Changed files with additions/deletions
+    - All commits in the PR
+    - Reviews and review comments
+    - Issue comments
+    - Merge status and verification details
+
 ### Resources
 
 This server does not provide any persistent resources. It's designed to fetch and transform web content on demand.
@@ -140,6 +173,22 @@ To get a Slack user OAuth token:
    - `groups:history` - Read messages in private channels (if needed)
 3. Install the app to your workspace
 4. Copy the "User OAuth Token" from the OAuth & Permissions page
+
+For GitHub services, you need to set up a personal access token:
+
+```bash
+export GITHUB_ACCESS_TOKEN="ghp_your-personal-access-token"
+```
+
+To get a GitHub personal access token:
+1. Go to https://github.com/settings/tokens
+2. Click "Generate new token" → "Generate new token (classic)"
+3. Give it a descriptive name and select appropriate scopes:
+   - `repo` - Full control of private repositories (if accessing private repos)
+   - `public_repo` - Access public repositories (for public repos only)
+   - `read:org` - Read org and team membership (if needed)
+4. Click "Generate token" and copy the generated token
+5. Store it securely as it won't be shown again
 
 ### Usage
 
@@ -204,6 +253,16 @@ Or use the published package:
 - Emoji reactions and file attachments
 - User information resolution with display names
 - Robust error handling and authentication
+
+### GitHub Integration
+- Pull Request information retrieval with comprehensive details
+- Changed files analysis with additions/deletions tracking
+- Commit history and verification status
+- Review and comment aggregation
+- Branch and merge status information
+- Labels, assignees, and milestone tracking
+- Parallel API calls for optimal performance
+- Proper authentication handling with Personal Access Tokens
 
 ### Technical Features
 - **Type-Safe Architecture**: Full TypeScript support with proper interface definitions

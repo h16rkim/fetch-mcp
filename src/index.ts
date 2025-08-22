@@ -11,10 +11,12 @@ import {
   validateConfluenceRequest,
   validateJiraRequest,
   validateSlackRequest,
+  validateGitHubRequest,
 } from "./validate.js";
 import { Fetcher } from "./Fetcher.js";
 import { AtlassianFetcher } from "./atlassian/AtlassianFetcher.js";
 import { SlackFetcher } from "./slack/SlackFetcher.js";
+import { GitHubFetcher } from "./github/GitHubFetcher.js";
 import { Constants } from "./constants.js";
 
 const server = new Server(
@@ -120,6 +122,22 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ["url"],
         },
       },
+      {
+        name: Constants.FETCH_GITHUB_PULL_REQUEST,
+        description:
+          "Fetch GitHub Pull Request information using GitHub API. Requires GITHUB_ACCESS_TOKEN environment variable.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            url: {
+              type: "string",
+              description:
+                "GitHub Pull Request URL (e.g., https://github.com/owner/repo/pull/123)",
+            },
+          },
+          required: ["url"],
+        },
+      },
     ],
   };
 });
@@ -154,6 +172,13 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
     const slackResult = await SlackFetcher.fetchSlackMessage(validatedArgs);
 
     return slackResult.toJson();
+  }
+
+  if (request.params.name === Constants.FETCH_GITHUB_PULL_REQUEST) {
+    const validatedArgs = validateGitHubRequest(args);
+    const githubResult = await GitHubFetcher.fetchGitHubPullRequest(validatedArgs);
+
+    return githubResult.toJson();
   }
 
   throw new Error("Tool not found");
