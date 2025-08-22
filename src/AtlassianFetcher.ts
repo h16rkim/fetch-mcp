@@ -270,7 +270,16 @@ ${description}${subtasksInfo}${commentsInfo}`;
     let text = '';
     
     if (adfContent.type === 'text') {
-      return adfContent.text || '';
+      const textContent = adfContent.text || '';
+      // Check if this text has link marks
+      if (adfContent.marks && Array.isArray(adfContent.marks)) {
+        const linkMark = adfContent.marks.find((mark: any) => mark.type === 'link');
+        const href = linkMark?.attrs?.href;
+        if (href) {
+          return `[${textContent}](${href})`;
+        }
+      }
+      return textContent;
     }
     
     if (adfContent.content && Array.isArray(adfContent.content)) {
