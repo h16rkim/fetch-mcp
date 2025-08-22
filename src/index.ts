@@ -8,13 +8,13 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { validateRequestPayload, validateConfluenceRequest, validateJiraRequest, validateSlackRequest } from "./validate.js";
 import { Fetcher } from "./Fetcher.js";
-import { AtlassianFetcher } from "./AtlassianFetcher.js";
-import { SlackFetcher } from "./SlackFetcher.js";
+import { AtlassianFetcher } from "./atlassian/AtlassianFetcher.js";
+import { SlackFetcher } from "./slack/SlackFetcher.js";
 import { Constants } from "./constants.js";
 
 const server = new Server(
   {
-    name: "zcaceres/fetch",
+    name: "@h16rkim/fetch",
     version: "0.1.0",
   },
   {
@@ -118,37 +118,29 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   if (request.params.name === Constants.FETCH) {
     const validatedArgs = validateRequestPayload(args);
     const fetchResult = await Fetcher.doFetch(validatedArgs);
-    return {
-      content: fetchResult.content,
-      isError: fetchResult.isError,
-    };
+
+    return fetchResult.toJson();
   }
 
   if (request.params.name === Constants.FETCH_CONFLUENCE_PAGE) {
     const validatedArgs = validateConfluenceRequest(args);
     const confluenceResult = await AtlassianFetcher.fetchConfluencePage(validatedArgs);
-    return {
-      content: confluenceResult.content,
-      isError: confluenceResult.isError,
-    };
+
+    return confluenceResult.toJson();
   }
 
   if (request.params.name === Constants.FETCH_JIRA_ISSUE) {
     const validatedArgs = validateJiraRequest(args);
     const jiraResult = await AtlassianFetcher.fetchJiraTicket(validatedArgs);
-    return {
-      content: jiraResult.content,
-      isError: jiraResult.isError,
-    };
+
+    return jiraResult.toJson();
   }
 
   if (request.params.name === Constants.FETCH_SLACK_MESSAGE) {
     const validatedArgs = validateSlackRequest(args);
     const slackResult = await SlackFetcher.fetchSlackMessage(validatedArgs);
-    return {
-      content: slackResult.content,
-      isError: slackResult.isError,
-    };
+
+    return slackResult.toJson();
   }
   
   throw new Error("Tool not found");

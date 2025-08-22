@@ -2,11 +2,7 @@ import { JSDOM } from "jsdom";
 import is_ip_private from "private-ip";
 import { RequestPayload } from "./types.js";
 import { Constants } from "./constants.js";
-
-interface FetchResult {
-  content: Array<{ type: "text"; text: string }>;
-  isError: boolean;
-}
+import { McpResult } from "./McpModels.js";
 
 export class Fetcher {
   private static readonly DEFAULT_MAX_LENGTH = Constants.DEFAULT_MAX_LENGTH;
@@ -65,7 +61,7 @@ export class Fetcher {
   private static async processAsText(
     requestPayload: RequestPayload, 
     response: Response
-  ): Promise<FetchResult> {
+  ): Promise<McpResult> {
     const htmlContent = await response.text();
     const dom = new JSDOM(htmlContent);
     const document = dom.window.document;
@@ -83,10 +79,7 @@ export class Fetcher {
       requestPayload.start_index ?? this.DEFAULT_START_INDEX
     );
 
-    return {
-      content: [{ type: "text", text: processedText }],
-      isError: false,
-    };
+    return McpResult.success(processedText);
   }
 
   /**
@@ -95,7 +88,7 @@ export class Fetcher {
   private static async processAsJson(
     requestPayload: RequestPayload, 
     response: Response
-  ): Promise<FetchResult> {
+  ): Promise<McpResult> {
     const jsonData = await response.json();
     const jsonString = JSON.stringify(jsonData);
     
@@ -105,10 +98,7 @@ export class Fetcher {
       requestPayload.start_index ?? this.DEFAULT_START_INDEX
     );
     
-    return {
-      content: [{ type: "text", text: processedJson }],
-      isError: false,
-    };
+    return McpResult.success(processedJson);
   }
 
   /**
@@ -117,7 +107,7 @@ export class Fetcher {
   private static async processAsHtml(
     requestPayload: RequestPayload, 
     response: Response
-  ): Promise<FetchResult> {
+  ): Promise<McpResult> {
     const htmlContent = await response.text();
     
     const processedHtml = this.applyLengthLimits(
@@ -126,10 +116,7 @@ export class Fetcher {
       requestPayload.start_index ?? this.DEFAULT_START_INDEX
     );
     
-    return {
-      content: [{ type: "text", text: processedHtml }],
-      isError: false,
-    };
+    return McpResult.success(processedHtml);
   }
 
   /**
@@ -144,10 +131,10 @@ export class Fetcher {
    * Try to process response in a specific format, return null if it fails
    */
   private static async tryProcessFormat(
-    processor: (payload: RequestPayload, response: Response) => Promise<FetchResult>,
+    processor: (payload: RequestPayload, response: Response) => Promise<McpResult>,
     requestPayload: RequestPayload,
     response: Response
-  ): Promise<FetchResult | null> {
+  ): Promise<McpResult | null> {
     try {
       return await processor(requestPayload, response);
     } catch {
@@ -158,21 +145,15 @@ export class Fetcher {
   /**
    * Create error result
    */
-  private static createErrorResult(url: string, error: Error): FetchResult {
-    return {
-      content: [{ 
-        type: "text", 
-        text: `Failed to fetch ${url}: ${error.message}` 
-      }],
-      isError: true,
-    };
+  private static createErrorResult(url: string, error: Error): McpResult {
+    return McpResult.error(`Failed to fetch ${url}: ${error.message}`);
   }
 
   /**
    * Main fetch method that automatically detects the best format
    * Priority: Text -> JSON -> HTML (fallback)
    */
-  static async doFetch(requestPayload: RequestPayload): Promise<FetchResult> {
+  static async doFetch(requestPayload: RequestPayload): Promise<McpResult> {
     try {
       const response = await this.performHttpRequest(requestPayload);
       

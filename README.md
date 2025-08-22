@@ -8,6 +8,37 @@ This MCP server provides functionality to fetch web content and automatically re
   <img width="380" height="200" src="https://glama.ai/mcp/servers/nu09wf23ao/badge" alt="Fetch Server MCP server" />
 </a>
 
+## Architecture
+
+### Project Structure
+
+```
+src/
+├── slack/                   # Slack service integration
+│   ├── SlackTypes.ts       # Slack interface definitions (I prefix)
+│   ├── SlackModels.ts      # Slack model classes with business logic
+│   └── SlackFetcher.ts     # Slack API client and processing
+├── atlassian/              # Atlassian service integration
+│   ├── AtlassianTypes.ts   # Atlassian interface definitions
+│   ├── AtlassianModels.ts  # Atlassian model classes with business logic
+│   └── AtlassianFetcher.ts # Atlassian API client and processing
+├── types.ts                # Common type definitions (IMcpResult)
+├── McpModels.ts           # MCP result model (McpResult class)
+├── constants.ts           # Application constants and configuration
+├── validate.ts            # Input validation logic
+├── ResponseBuilder.ts     # Response formatting utilities
+├── Fetcher.ts            # General web content fetching
+└── index.ts              # Main MCP server and tool registration
+```
+
+### Design Principles
+
+- **Interface-Class Pattern**: Interfaces use "I" prefix, classes contain business logic
+- **Service Separation**: Each service has its own directory with types, models, and fetcher
+- **Unified Results**: All services return `McpResult` with consistent `toJson()` interface
+- **Type Safety**: Strong TypeScript typing with proper error handling
+- **Modular Architecture**: Clear separation of concerns and easy extensibility
+
 ## Components
 
 ### Tools
@@ -47,7 +78,7 @@ This MCP server provides functionality to fetch web content and automatically re
 
 - **fetch_slack_message**
   - Fetch Slack message information using Slack Web API
-  - Requires `SLACK_REFRESH_TOKEN` environment variable
+  - Requires `SLACK_APP_USER_OAUTH_TOKEN` environment variable
   - Input:
     - `url` (string, required): Slack message URL (e.g., https://your-workspace.slack.com/archives/CHANNEL_ID/pTIMESTAMP)
     - `maxLength` (number, optional): Maximum number of characters to return (default: 5000)
@@ -56,7 +87,7 @@ This MCP server provides functionality to fetch web content and automatically re
     - Thread replies (if available)
     - Emoji reactions (if available)
     - File attachments (if available)
-  - Automatically manages access token refresh using the provided refresh token
+  - Supports both regular messages and thread replies
 
 ### Resources
 
@@ -90,7 +121,10 @@ export SLACK_APP_USER_OAUTH_TOKEN="xoxp-your-user-oauth-token"
 
 To get a Slack user OAuth token:
 1. Create a Slack app at https://api.slack.com/apps
-2. Configure OAuth & Permissions with required scopes (channels:history, users:read)
+2. Configure OAuth & Permissions with required scopes:
+   - `channels:history` - Read messages in public channels
+   - `users:read` - Read user profile information
+   - `groups:history` - Read messages in private channels (if needed)
 3. Install the app to your workspace
 4. Copy the "User OAuth Token" from the OAuth & Permissions page
 
@@ -121,6 +155,8 @@ To integrate this server with a desktop app, add the following to your app's ser
 }
 ```
 
+Or use the published package:
+
 ```json
 {
   "fetch": {
@@ -136,26 +172,74 @@ To integrate this server with a desktop app, add the following to your app's ser
 
 ## Features
 
+### Core Capabilities
 - Fetches web content using modern fetch API
 - Supports custom headers for requests
 - Automatically detects and returns content in the most appropriate format
 - Uses JSDOM for HTML parsing and text extraction
 - Intelligent fallback system: text → JSON → HTML
-- Atlassian Confluence page content extraction
+
+### Atlassian Integration
+- Confluence page content extraction with rich formatting
 - Jira ticket information retrieval with comprehensive details
-- Slack message fetching with thread replies, reactions, and attachments
 - Support for Atlassian Document Format (ADF) content parsing
-- Automatic Slack access token management and refresh
+- Proper authentication handling with API tokens
+
+### Slack Integration
+- Message fetching with full context (author, timestamp, content)
+- Thread replies support with proper hierarchy
+- Emoji reactions and file attachments
+- User information resolution with display names
+- Robust error handling and authentication
+
+### Technical Features
+- **Type-Safe Architecture**: Full TypeScript support with proper interface definitions
+- **Modular Design**: Service-specific modules for easy maintenance and extension
+- **Unified Error Handling**: Consistent error responses across all services
+- **Performance Optimized**: Parallel API calls and efficient data processing
+- **Security Focused**: Input validation and private IP blocking
 
 ## Development
 
+### Building and Running
+- Run `npm run build` to compile TypeScript to JavaScript
 - Run `npm run dev` to start the TypeScript compiler in watch mode
-- Use `npm test` to run the test suite
+- Use `npm test` to run the test suite (when available)
+
+### Adding New Services
+
+To add a new service integration:
+
+1. Create a new directory under `src/` (e.g., `src/github/`)
+2. Add type definitions with "I" prefix (e.g., `GitHubTypes.ts`)
+3. Create model classes with business logic (e.g., `GitHubModels.ts`)
+4. Implement the fetcher class (e.g., `GitHubFetcher.ts`)
+5. Add constants to `constants.ts`
+6. Add validation to `validate.ts`
+7. Register the tool in `index.ts`
+8. Update this README
+
+### Code Quality Guidelines
+
+- Follow the established Interface-Class pattern
+- Use "I" prefix for interfaces, no prefix for classes
+- Implement business logic in model classes, not fetchers
+- Return `McpResult` objects with `toJson()` method
+- Use proper TypeScript typing throughout
+- Follow the modular directory structure
 
 ## Publish
 
-`pnpm publish --access=public`
+```bash
+pnpm publish --access=public
+```
 
 ## License
 
 This project is licensed under the MIT License.
+
+---
+
+**Last Updated**: 2025-08-22  
+**Version**: 2.0  
+**Architecture**: Modular TypeScript with Interface-Class Pattern

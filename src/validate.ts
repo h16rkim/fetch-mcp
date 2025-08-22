@@ -1,4 +1,6 @@
-import { RequestPayload, ConfluenceRequest, JiraRequest, SlackRequest } from "./types.js";
+import { RequestPayload } from "./types.js";
+import { ConfluenceRequest, JiraRequest } from "./atlassian/AtlassianTypes.js";
+import { SlackRequest } from "./slack/SlackTypes.js";
 import { Constants } from "./constants.js";
 
 // Base validation function that can be curried for optional validation

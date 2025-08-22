@@ -9,13 +9,21 @@
 ### 파일 구조
 ```
 src/
-├── index.ts              # 메인 서버 및 tool 등록
-├── constants.ts          # 상수 정의 (tool 이름, 기본값)
-├── types.ts             # 타입 정의 (요청/응답 타입)
-├── validate.ts          # 입력 검증 로직
-├── Fetcher.ts           # 일반 웹 콘텐츠 조회
-├── AtlassianFetcher.ts  # Confluence/Jira API 처리
-└── SlackFetcher.ts      # Slack API 처리
+├── slack/                   # Slack 관련 파일들
+│   ├── SlackTypes.ts       # Slack 타입 정의 (I prefix)
+│   ├── SlackModels.ts      # Slack 모델 클래스들
+│   └── SlackFetcher.ts     # Slack API 처리
+├── atlassian/              # Atlassian 관련 파일들
+│   ├── AtlassianTypes.ts   # Atlassian 타입 정의
+│   ├── AtlassianModels.ts  # Atlassian 모델 클래스들
+│   └── AtlassianFetcher.ts # Atlassian API 처리
+├── types.ts                # 공통 타입 정의 (IMcpResult)
+├── McpModels.ts           # MCP 결과 모델 (McpResult)
+├── constants.ts           # 상수 정의 (tool 이름, 기본값)
+├── validate.ts            # 입력 검증 로직
+├── ResponseBuilder.ts     # 응답 빌더
+├── Fetcher.ts            # 일반 웹 콘텐츠 조회
+└── index.ts              # 메인 서버 및 tool 등록
 ```
 
 ### 현재 구현된 Tools
@@ -24,220 +32,256 @@ src/
 3. **fetch_jira_issue**: Jira 티켓 조회  
 4. **fetch_slack_message**: Slack 메시지 조회
 
-## 🎯 코드 작업 시 중점 고려사항
+## 🎯 코딩 컨벤션 및 아키텍처 교훈 (2025-08-22 업데이트)
 
-### 1. 타입 안전성 (Type Safety)
+### 1. Interface vs Class 설계 원칙
 
 #### ✅ 해야 할 것
-- **모든 외부 API 응답에 대해 명확한 타입 정의**
+- **Interface는 "I" prefix 사용**
   ```typescript
-  // Good: 명확한 타입 정의
-  interface SlackMessage {
+  // Good: Interface에 I prefix
+  export interface ISlackMessage {
     ts: string;
     user?: string;
     text?: string;
-    // ...
   }
   
-  // Bad: any 타입 사용
-  const message: any = await response.json();
-  ```
-
-- **타입 가드 함수 활용**
-  ```typescript
-  if (!data.ok || !data.user) {
-    return "Unknown User";
+  // Good: Class는 prefix 없음
+  export class SlackMessage {
+    private _data: ISlackMessage;
+    constructor(data: ISlackMessage) { ... }
   }
   ```
 
-#### ❌ 피해야 할 것
-- `any` 타입 남발
-- 타입 단언(`as`) 과도한 사용
-- 옵셔널 체이닝 없이 중첩 객체 접근
-
-### 2. 상수 관리 (Constants Management)
-
-#### ✅ 해야 할 것
-- **모든 하드코딩된 문자열을 constants.ts로 분리**
+- **비즈니스 로직은 Class에 위임**
   ```typescript
-  // constants.ts
-  export class Constants {
-    static readonly FETCH_NEW_TOOL = "fetch_new_tool";
-    static readonly DEFAULT_TIMEOUT = 30000;
-  }
-  
-  // 사용
-  if (request.params.name === Constants.FETCH_NEW_TOOL) { ... }
-  ```
-
-- **환경변수명도 상수로 관리**
-  ```typescript
-  static readonly ENV_SLACK_APP_USER_OAUTH_TOKEN = "SLACK_APP_USER_OAUTH_TOKEN";
-  static readonly ENV_ATLASSIAN_USER = "ATLASSIAN_USER";
-  static readonly ENV_ATLASSIAN_API_TOKEN = "ATLASSIAN_API_TOKEN";
-  
-  // 사용
-  const token = process.env[Constants.ENV_SLACK_APP_USER_OAUTH_TOKEN];
-  ```
-
-#### ❌ 피해야 할 것
-- 코드 내 하드코딩된 문자열
-- 매직 넘버 사용
-
-### 3. 검증 로직 (Validation Logic)
-
-#### ✅ 해야 할 것
-- **Curry 패턴을 활용한 재사용 가능한 검증 함수**
-  ```typescript
-  // 새로운 optional validator 생성
-  const validateOptionalEmail = createOptionalValidator(validateEmail);
-  ```
-
-- **명확한 에러 메시지**
-  ```typescript
-  throw new Error(`Invalid ${fieldName}: must be a valid email address`);
-  ```
-
-#### ❌ 피해야 할 것
-- 중복된 검증 로직
-- 모호한 에러 메시지
-
-### 4. API 클라이언트 패턴 (API Client Pattern)
-
-#### ✅ 해야 할 것
-- **각 서비스별로 별도 Fetcher 클래스 생성**
-  ```typescript
-  // 새로운 서비스 추가 시
-  export class GitHubFetcher {
-    private static readonly DEFAULT_MAX_LENGTH = Constants.DEFAULT_MAX_LENGTH;
+  // Good: 비즈니스 로직이 Class에 집중
+  export class SlackMessage {
+    get formattedTimestamp(): string {
+      return new Date(parseFloat(this._data.ts) * 1000).toISOString();
+    }
     
-    static async fetchRepository(request: GitHubRequest): Promise<GitHubResult> {
-      // 구현
+    get isThreaded(): boolean {
+      return Boolean(this._data.thread_ts);
     }
   }
   ```
 
-- **토큰 관리 (필요시)**
+- **HTTP 응답 처리는 Response Model Class 사용**
   ```typescript
-  // 단순한 토큰 기반 인증 (Slack 예시)
-  private static getAccessToken(): string {
-    const token = process.env[Constants.ENV_SERVICE_TOKEN];
-    if (!token) {
-      throw new Error(`${Constants.ENV_SERVICE_TOKEN} environment variable is not set`);
-    }
-    return token;
+  // Good: HTTP 응답을 Class로 래핑
+  const rawData: ISlackUsersInfoResponse = await response.json();
+  const data = new SlackUsersInfoResponse(rawData);
+  
+  if (!data.isSuccess) {
+    return undefined;
   }
   
-  // 복잡한 토큰 캐싱이 필요한 경우 (OAuth refresh 등)
-  private static cachedTokens: TokenCache | null = null;
+  return data.user; // SlackUser 클래스 반환
+  ```
+
+#### ❌ 피해야 할 것
+- Interface를 직접 반환하는 함수
+- 비즈니스 로직이 Fetcher에 집중되는 구조
+- Raw HTTP 응답을 직접 사용
+
+### 2. 파일 구조화 및 모듈 분리
+
+#### ✅ 해야 할 것
+- **서비스별 디렉토리 분리**
+  ```
+  src/
+  ├── slack/          # Slack 관련 모든 파일
+  ├── atlassian/      # Atlassian 관련 모든 파일
+  └── common/         # 공통 유틸리티
+  ```
+
+- **타입 파일 분리**
+  ```typescript
+  // SlackTypes.ts - Slack 전용 타입들
+  export interface ISlackMessage { ... }
+  export type SlackRequest = { ... }
   
-  private static isTokenValid(): boolean {
-    // 만료 시간 체크 로직
+  // types.ts - 공통 타입들
+  export interface IMcpResult { ... }
+  export type RequestPayload = { ... }
+  ```
+
+- **Import 경로 명확화**
+  ```typescript
+  // 같은 디렉토리 내
+  import { ISlackMessage } from "./SlackTypes.js";
+  
+  // 상위 디렉토리
+  import { Constants } from "../constants.js";
+  
+  // 하위 디렉토리
+  import { SlackFetcher } from "./slack/SlackFetcher.js";
+  ```
+
+#### ❌ 피해야 할 것
+- 모든 파일을 루트 디렉토리에 배치
+- 서비스별 타입이 섞여있는 구조
+- 복잡한 상대 경로 (../../..)
+
+### 3. 생성자 설계 및 객체 생성 패턴
+
+#### ✅ 해야 할 것
+- **자연스러운 생성자 매개변수**
+  ```typescript
+  // Good: 직관적인 매개변수 순서
+  export class SlackMessageModel {
+    constructor(
+      message: SlackMessage,
+      channel: string,
+      isReply: boolean,
+      user?: SlackUser,
+      threadTs?: string,
+      replies: SlackMessage[] = []
+    ) { ... }
+  }
+  ```
+
+- **정적 팩토리 메서드 활용**
+  ```typescript
+  // Good: 의미있는 생성 방법 제공
+  export class McpResult {
+    static success(text: string): McpResult { ... }
+    static error(message: string): McpResult { ... }
+  }
+  ```
+
+#### ❌ 피해야 할 것
+- 억지로 만든 Wrapper 객체를 생성자에 전달
+- 복잡한 객체 구성을 위한 임시 인터페이스 생성
+
+### 4. 변수 선언 및 제어 흐름
+
+#### ✅ 해야 할 것
+- **Early Return 패턴**
+  ```typescript
+  // Good: 조건별로 메서드 분리
+  if (isReply && threadTs) {
+    return await this.handleReplyMessage(...);
+  } else {
+    return await this.handleRegularMessage(...);
+  }
+  ```
+
+- **메서드 분리로 가독성 향상**
+  ```typescript
+  // Good: 각 케이스별 전용 메서드
+  private static async handleReplyMessage(...): Promise<McpResult> {
+    const replyMessage = await this.getSpecificReply(...);
+    if (!replyMessage) {
+      return this.createErrorResult("Reply message not found");
+    }
+    // 처리 로직
+  }
+  ```
+
+#### ❌ 피해야 할 것
+- let 변수 선언 후 분기문에서 초기화
+- 긴 if-else 체인
+- 변수 상태 추적이 복잡한 구조
+
+### 5. 결과 타입 통합 및 표준화
+
+#### ✅ 해야 할 것
+- **공통 결과 타입 사용**
+  ```typescript
+  // Good: 모든 Fetcher가 동일한 결과 타입 사용
+  export class McpResult {
+    toJson(): IMcpResult { ... }
+    static success(text: string): McpResult { ... }
+    static error(message: string): McpResult { ... }
   }
   ```
 
 - **일관된 에러 처리**
   ```typescript
-  private static createErrorResult(message: string): ServiceResult {
-    return {
-      content: [{ type: "text", text: `Error: ${message}` }],
-      isError: true,
-    };
+  // Good: 모든 Fetcher에서 동일한 패턴
+  private static createErrorResult(message: string): McpResult {
+    return McpResult.error(message);
   }
   ```
 
 #### ❌ 피해야 할 것
-- 하나의 클래스에 모든 서비스 로직 집중
-- 토큰 만료 시 재시도 로직 없음
+- 서비스별로 다른 결과 타입 사용
+- 중복된 에러 처리 로직
 
-### 5. 새로운 Tool 추가 시 체크리스트
-
-#### 필수 단계
-1. **constants.ts에 tool 이름 추가**
-   ```typescript
-   static readonly FETCH_NEW_SERVICE = "fetch_new_service";
-   ```
-
-2. **types.ts에 요청/응답 타입 정의**
-   ```typescript
-   export type NewServiceRequest = {
-     url: string;
-     maxLength?: number;
-   };
-   
-   export interface NewServiceApiResponse {
-     // API 응답 구조 정의
-   }
-   ```
-
-3. **validate.ts에 검증 함수 추가**
-   ```typescript
-   export function validateNewServiceRequest(args: any): NewServiceRequest {
-     // 검증 로직
-   }
-   ```
-
-4. **새로운 Fetcher 클래스 생성**
-   ```typescript
-   export class NewServiceFetcher {
-     // 구현
-   }
-   ```
-
-5. **index.ts에 tool 등록**
-   ```typescript
-   // ListToolsRequestSchema에 추가
-   // CallToolRequestSchema에 핸들러 추가
-   ```
-
-6. **README.md 업데이트**
-
-### 6. 에러 처리 (Error Handling)
+### 6. 데이터 접근 패턴
 
 #### ✅ 해야 할 것
-- **계층별 에러 처리**
+- **Raw 데이터 접근을 위한 data getter**
   ```typescript
-  // HTTP 에러
-  if (!response.ok) {
-    if (response.status === 401) {
-      return this.createErrorResult("Authentication failed");
+  export class SlackMessage {
+    private _data: ISlackMessage;
+    
+    get data(): ISlackMessage {
+      return this._data;
     }
-    return this.createErrorResult(`HTTP error: ${response.status}`);
+    
+    // 비즈니스 로직 메서드들
+    get formattedTimestamp(): string { ... }
   }
-  
-  // API 에러
-  if (!data.ok) {
+  ```
+
+- **계층적 데이터 접근**
+  ```typescript
+  // Model -> Class -> Interface 순서
+  const messageModel = new SlackMessageModel(message, ...);
+  const rawData = messageModel.messageDetails.data; // 필요시에만
+  ```
+
+#### ❌ 피해야 할 것
+- 직접적인 Interface 데이터 조작
+- 비즈니스 로직 없는 단순 데이터 전달
+
+### 7. 타입 안전성 강화
+
+#### ✅ 해야 할 것
+- **명확한 타입 정의와 검증**
+  ```typescript
+  // Good: 타입 가드와 함께 사용
+  if (!data.isSuccess) {
     return this.createErrorResult(`API error: ${data.error || 'Unknown error'}`);
   }
+  
+  return data.user; // 타입이 보장된 상태
   ```
 
-- **Graceful degradation**
+- **옵셔널 체이닝 적극 활용**
   ```typescript
-  // 사용자 정보 조회 실패 시 기본값 사용
-  const userName = await this.getUserInfo(token, userId) || "Unknown User";
+  // Good: 안전한 속성 접근
+  return this._data.profile?.display_name || 
+         this._data.display_name || 
+         this._data.name || 
+         "Unknown User";
   ```
 
 #### ❌ 피해야 할 것
-- 에러 무시 또는 빈 catch 블록
-- 사용자에게 기술적 에러 메시지 노출
+- any 타입 남발
+- 타입 단언 과도한 사용
+- 런타임 에러 가능성이 있는 접근
 
-### 7. 성능 최적화 (Performance Optimization)
+### 8. 성능 및 메모리 최적화
 
 #### ✅ 해야 할 것
-- **토큰 캐싱**
+- **지연 초기화 패턴**
   ```typescript
-  private static cachedTokens: TokenCache | null = null;
-  ```
-
-- **응답 길이 제한**
-  ```typescript
-  private static applyLengthLimits(text: string, maxLength: number): string {
-    return text.length <= maxLength ? text : text.substring(0, maxLength);
+  // Good: 필요할 때만 생성
+  get reactions(): SlackReaction[] {
+    if (!this._data.reactions) {
+      return [];
+    }
+    return this._data.reactions.map(reaction => new SlackReaction(reaction));
   }
   ```
 
-- **병렬 API 호출 (필요시)**
+- **병렬 처리 활용**
   ```typescript
+  // Good: 독립적인 API 호출은 병렬로
   const [userInfo, replies] = await Promise.all([
     this.getUserInfo(token, userId),
     this.getReplies(token, channel, timestamp)
@@ -245,110 +289,55 @@ src/
   ```
 
 #### ❌ 피해야 할 것
-- 불필요한 API 호출 반복
-- 무제한 응답 크기
+- 불필요한 객체 생성
+- 순차적인 독립 API 호출
 
-### 8. 보안 고려사항 (Security Considerations)
+### 9. 코드 재사용성 및 확장성
 
 #### ✅ 해야 할 것
-- **환경변수로 민감 정보 관리**
+- **상속을 통한 코드 재사용**
   ```typescript
-  // 상수를 사용한 환경변수 접근
-  const token = process.env[Constants.ENV_SERVICE_TOKEN];
-  if (!token) {
-    throw new Error(`${Constants.ENV_SERVICE_TOKEN} environment variable is not set`);
-  }
-  
-  // 단순한 토큰 기반 인증
-  private static getAccessToken(): string {
-    const token = process.env[Constants.ENV_SLACK_APP_USER_OAUTH_TOKEN];
-    
-    if (!token) {
-      throw new Error(`${Constants.ENV_SLACK_APP_USER_OAUTH_TOKEN} environment variable is not set`);
+  // Good: 공통 기능은 기본 클래스에
+  export class SlackUser { ... }
+  export class SlackUserInfo extends SlackUser {}
+  ```
+
+- **제네릭을 활용한 공통 패턴**
+  ```typescript
+  // Good: 재사용 가능한 응답 처리
+  export class ApiResponseHandler<T> {
+    static process<T>(rawData: any, ModelClass: new (data: any) => T): T {
+      return new ModelClass(rawData);
     }
-    
-    return token;
-  }
-  ```
-
-- **URL 검증**
-  ```typescript
-  // Private IP 차단 (Fetcher.ts 참고)
-  if (is_ip_private(url)) {
-    throw new Error("Private IP access blocked");
-  }
-  ```
-
-- **입력 검증 강화**
-  ```typescript
-  // URL 형식 검증
-  try {
-    new URL(url);
-  } catch {
-    throw new Error("Invalid URL format");
   }
   ```
 
 #### ❌ 피해야 할 것
-- 코드에 하드코딩된 토큰/비밀번호
-- 사용자 입력 검증 생략
-- SSRF 취약점 (Private IP 접근 허용)
+- 중복된 코드 패턴
+- 하드코딩된 특정 서비스 로직
 
-### 9. 코드 품질 (Code Quality)
+### 10. 테스트 용이성 (Testability)
 
 #### ✅ 해야 할 것
-- **명확한 함수/변수명**
+- **의존성 주입 가능한 구조**
   ```typescript
-  // Good
-  private static async refreshAccessToken(): Promise<string>
-  private static parseSlackUrl(url: string): { channel: string; timestamp: string }
-  
-  // Bad
-  private static refresh(): Promise<string>
-  private static parse(url: string): any
-  ```
-
-- **단일 책임 원칙**
-  ```typescript
-  // 각 메서드는 하나의 책임만
-  private static formatReactions(reactions?: SlackReaction[]): string
-  private static formatAttachments(attachments?: SlackAttachment[]): string
-  ```
-
-- **적절한 주석**
-  ```typescript
-  /**
-   * Parse Slack message URL to extract channel and timestamp
-   * URL format: https://workspace.slack.com/archives/CHANNEL_ID/pTIMESTAMP
-   */
-  ```
-
-#### ❌ 피해야 할 것
-- 긴 함수 (100줄 이상)
-- 깊은 중첩 (3단계 이상)
-- 의미 없는 변수명 (a, b, temp 등)
-
-### 10. 테스트 고려사항 (Testing Considerations)
-
-#### ✅ 해야 할 것
-- **Mock 데이터로 테스트 가능한 구조**
-  ```typescript
-  // API 호출 부분을 별도 메서드로 분리
-  private static async callSlackApi(url: string, token: string) {
-    // 테스트 시 mock 가능
+  // Good: 테스트 시 mock 가능
+  private static async callApi(url: string, headers: Record<string, string>) {
+    return fetch(url, { headers });
   }
   ```
 
-- **에러 케이스 테스트**
+- **순수 함수 지향**
   ```typescript
-  // 401, 404, 500 등 다양한 HTTP 상태 코드
-  // API 에러 응답
-  // 네트워크 오류
+  // Good: 부작용 없는 데이터 변환
+  static formatTimestamp(timestamp: string): string {
+    return new Date(parseFloat(timestamp) * 1000).toISOString();
+  }
   ```
 
 #### ❌ 피해야 할 것
+- 외부 의존성과 강결합
 - 테스트하기 어려운 복잡한 메서드
-- 외부 의존성과 강결합된 코드
 
 ## 🚀 향후 확장 방향
 
@@ -378,6 +367,6 @@ src/
 
 ---
 
-**마지막 업데이트**: 2025-08-21  
+**마지막 업데이트**: 2025-08-22  
 **작성자**: AI Assistant  
-**버전**: 1.0
+**버전**: 2.0

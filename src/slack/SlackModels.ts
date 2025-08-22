@@ -2,54 +2,59 @@
  * Slack API response models for better code organization and readability
  */
 
-import { SlackMessage, SlackReaction, SlackAttachment, SlackFile, SlackUser } from "./types.js";
+import { 
+  ISlackMessage, 
+  ISlackReaction, 
+  ISlackAttachment, 
+  ISlackFile, 
+  ISlackUser,
+  ISlackConversationsHistoryResponse,
+  ISlackConversationsRepliesResponse,
+  ISlackUsersInfoResponse,
+  ISlackApiResponse
+} from "./SlackTypes.js";
 
-export interface SlackApiResponse {
-  message: SlackMessage;
-  user?: SlackUser;
-  channel: string;
-  isReply: boolean;
-  threadTs?: string;
-  replies?: SlackMessage[];
-}
+export class SlackUser {
+  private _data: ISlackUser;
 
-export class SlackUserInfo {
-  private user: SlackUser;
+  constructor(data: ISlackUser) {
+    this._data = data;
+  }
 
-  constructor(user: SlackUser) {
-    this.user = user;
+  get data(): ISlackUser {
+    return this._data;
   }
 
   get id(): string {
-    return this.user.id;
+    return this._data.id;
   }
 
   get name(): string {
-    return this.user.name || "Unknown";
+    return this._data.name || "Unknown";
   }
 
   get realName(): string {
-    return this.user.real_name || "Unknown";
+    return this._data.real_name || "Unknown";
   }
 
   get displayName(): string {
-    return this.user.display_name || "Unknown";
+    return this._data.display_name || "Unknown";
   }
 
   get profileDisplayName(): string {
-    return this.user.profile?.display_name || "Unknown";
+    return this._data.profile?.display_name || "Unknown";
   }
 
   get profileRealName(): string {
-    return this.user.profile?.real_name || "Unknown";
+    return this._data.profile?.real_name || "Unknown";
   }
 
   get profileFirstName(): string {
-    return this.user.profile?.first_name || "Unknown";
+    return this._data.profile?.first_name || "Unknown";
   }
 
   get profileLastName(): string {
-    return this.user.profile?.last_name || "Unknown";
+    return this._data.profile?.last_name || "Unknown";
   }
 
   /**
@@ -57,11 +62,11 @@ export class SlackUserInfo {
    * Priority: profile.display_name > display_name > profile.real_name > real_name > name > "Unknown User"
    */
   get bestDisplayName(): string {
-    return this.user.profile?.display_name || 
-           this.user.display_name || 
-           this.user.profile?.real_name || 
-           this.user.real_name || 
-           this.user.name || 
+    return this._data.profile?.display_name || 
+           this._data.display_name || 
+           this._data.profile?.real_name || 
+           this._data.real_name || 
+           this._data.name || 
            "Unknown User";
   }
 
@@ -69,8 +74,8 @@ export class SlackUserInfo {
    * Get full name if available (first + last name)
    */
   get fullName(): string {
-    const firstName = this.user.profile?.first_name;
-    const lastName = this.user.profile?.last_name;
+    const firstName = this._data.profile?.first_name;
+    const lastName = this._data.profile?.last_name;
     
     if (firstName && lastName) {
       return `${firstName} ${lastName}`;
@@ -87,7 +92,7 @@ export class SlackUserInfo {
    * Check if user has profile information
    */
   get hasProfile(): boolean {
-    return Boolean(this.user.profile);
+    return Boolean(this._data.profile);
   }
 
   /**
@@ -108,23 +113,27 @@ export class SlackUserInfo {
   }
 }
 
-export class SlackReactionInfo {
-  private reaction: SlackReaction;
+export class SlackReaction {
+  private _data: ISlackReaction;
 
-  constructor(reaction: SlackReaction) {
-    this.reaction = reaction;
+  constructor(data: ISlackReaction) {
+    this._data = data;
+  }
+
+  get data(): ISlackReaction {
+    return this._data;
   }
 
   get name(): string {
-    return this.reaction.name || "unknown";
+    return this._data.name || "unknown";
   }
 
   get count(): number {
-    return this.reaction.count || 0;
+    return this._data.count || 0;
   }
 
   get users(): string[] {
-    return this.reaction.users || [];
+    return this._data.users || [];
   }
 
   get userCount(): number {
@@ -140,75 +149,79 @@ export class SlackReactionInfo {
   }
 }
 
-export class SlackAttachmentInfo {
-  private attachment: SlackAttachment;
+export class SlackAttachment {
+  private _data: ISlackAttachment;
 
-  constructor(attachment: SlackAttachment) {
-    this.attachment = attachment;
+  constructor(data: ISlackAttachment) {
+    this._data = data;
+  }
+
+  get data(): ISlackAttachment {
+    return this._data;
   }
 
   get id(): number | undefined {
-    return this.attachment.id;
+    return this._data.id;
   }
 
   get color(): string | undefined {
-    return this.attachment.color;
+    return this._data.color;
   }
 
   get fallback(): string | undefined {
-    return this.attachment.fallback;
+    return this._data.fallback;
   }
 
   get title(): string | undefined {
-    return this.attachment.title;
+    return this._data.title;
   }
 
   get titleLink(): string | undefined {
-    return this.attachment.title_link;
+    return this._data.title_link;
   }
 
   get text(): string | undefined {
-    return this.attachment.text;
+    return this._data.text;
   }
 
   get pretext(): string | undefined {
-    return this.attachment.pretext;
+    return this._data.pretext;
   }
 
   get imageUrl(): string | undefined {
-    return this.attachment.image_url;
+    return this._data.image_url;
   }
 
   get thumbUrl(): string | undefined {
-    return this.attachment.thumb_url;
+    return this._data.thumb_url;
   }
 
   get fromUrl(): string | undefined {
-    return this.attachment.from_url;
+    return this._data.from_url;
   }
 
   get serviceName(): string | undefined {
-    return this.attachment.service_name;
+    return this._data.service_name;
   }
 
   get serviceIcon(): string | undefined {
-    return this.attachment.service_icon;
+    return this._data.service_icon;
   }
 
   get authorName(): string | undefined {
-    return this.attachment.author_name;
+    return this._data.author_name;
   }
 
   get authorLink(): string | undefined {
-    return this.attachment.author_link;
+    return this._data.author_link;
   }
 
   get authorIcon(): string | undefined {
-    return this.attachment.author_icon;
+    return this._data.author_icon;
   }
 
   get fields(): Array<{ title: string; value: string; short?: boolean }> {
-    return this.attachment.fields || [];
+    return this._data.fields || [];
   }
 
   get hasFields(): boolean {
@@ -239,23 +252,27 @@ export class SlackAttachmentInfo {
   }
 }
 
-export class SlackFileInfo {
-  private file: SlackFile;
+export class SlackFile {
+  private _data: ISlackFile;
 
-  constructor(file: SlackFile) {
-    this.file = file;
+  constructor(data: ISlackFile) {
+    this._data = data;
+  }
+
+  get data(): ISlackFile {
+    return this._data;
   }
 
   get id(): string {
-    return this.file.id;
+    return this._data.id;
   }
 
   get name(): string | undefined {
-    return this.file.name;
+    return this._data.name;
   }
 
   get title(): string | undefined {
-    return this.file.title;
+    return this._data.title;
   }
 
   get displayName(): string {
@@ -263,23 +280,23 @@ export class SlackFileInfo {
   }
 
   get mimetype(): string | undefined {
-    return this.file.mimetype;
+    return this._data.mimetype;
   }
 
   get filetype(): string | undefined {
-    return this.file.filetype;
+    return this._data.filetype;
   }
 
   get prettyType(): string | undefined {
-    return this.file.pretty_type;
+    return this._data.pretty_type;
   }
 
   get user(): string | undefined {
-    return this.file.user;
+    return this._data.user;
   }
 
   get size(): number | undefined {
-    return this.file.size;
+    return this._data.size;
   }
 
   get sizeInKB(): number | undefined {
@@ -287,19 +304,19 @@ export class SlackFileInfo {
   }
 
   get urlPrivate(): string | undefined {
-    return this.file.url_private;
+    return this._data.url_private;
   }
 
   get urlPrivateDownload(): string | undefined {
-    return this.file.url_private_download;
+    return this._data.url_private_download;
   }
 
   get permalink(): string | undefined {
-    return this.file.permalink;
+    return this._data.permalink;
   }
 
   get permalinkPublic(): string | undefined {
-    return this.file.permalink_public;
+    return this._data.permalink_public;
   }
 
   get hasSize(): boolean {
@@ -334,19 +351,23 @@ export class SlackFileInfo {
   }
 }
 
-export class SlackMessageInfo {
-  private message: SlackMessage;
+export class SlackMessage {
+  private _data: ISlackMessage;
 
-  constructor(message: SlackMessage) {
-    this.message = message;
+  constructor(data: ISlackMessage) {
+    this._data = data;
+  }
+
+  get data(): ISlackMessage {
+    return this._data;
   }
 
   get type(): string {
-    return this.message.type || "message";
+    return this._data.type || "message";
   }
 
   get subtype(): string | undefined {
-    return this.message.subtype;
+    return this._data.subtype;
   }
 
   get messageType(): string {
@@ -355,34 +376,34 @@ export class SlackMessageInfo {
   }
 
   get timestamp(): string {
-    return this.message.ts;
+    return this._data.ts;
   }
 
   get formattedTimestamp(): string {
-    if (!this.message.ts) {
+    if (!this._data.ts) {
       return "Unknown time";
     }
-    return new Date(parseFloat(this.message.ts) * 1000).toISOString();
+    return new Date(parseFloat(this._data.ts) * 1000).toISOString();
   }
 
   get user(): string | undefined {
-    return this.message.user;
+    return this._data.user;
   }
 
   get botId(): string | undefined {
-    return this.message.bot_id;
+    return this._data.bot_id;
   }
 
   get username(): string | undefined {
-    return this.message.username;
+    return this._data.username;
   }
 
   get text(): string {
-    return this.message.text || "No content";
+    return this._data.text || "No content";
   }
 
   get threadTimestamp(): string | undefined {
-    return this.message.thread_ts;
+    return this._data.thread_ts;
   }
 
   get isThreaded(): boolean {
@@ -390,26 +411,26 @@ export class SlackMessageInfo {
   }
 
   get replyCount(): number {
-    return this.message.reply_count || 0;
+    return this._data.reply_count || 0;
   }
 
   get replyUsersCount(): number {
-    return this.message.reply_users_count || 0;
+    return this._data.reply_users_count || 0;
   }
 
   get latestReply(): string | undefined {
-    return this.message.latest_reply;
+    return this._data.latest_reply;
   }
 
   get threadInfo(): string {
     return this.isThreaded ? `Yes (${this.replyCount} replies)` : "No";
   }
 
-  get reactions(): SlackReactionInfo[] {
-    if (!this.message.reactions) {
+  get reactions(): SlackReaction[] {
+    if (!this._data.reactions) {
       return [];
     }
-    return this.message.reactions.map(reaction => new SlackReactionInfo(reaction));
+    return this._data.reactions.map(reaction => new SlackReaction(reaction));
   }
 
   get hasReactions(): boolean {
@@ -423,22 +444,22 @@ export class SlackMessageInfo {
     return this.reactions.map(reaction => reaction.formattedReaction).join(' ');
   }
 
-  get attachments(): SlackAttachmentInfo[] {
-    if (!this.message.attachments) {
+  get attachments(): SlackAttachment[] {
+    if (!this._data.attachments) {
       return [];
     }
-    return this.message.attachments.map(attachment => new SlackAttachmentInfo(attachment));
+    return this._data.attachments.map(attachment => new SlackAttachment(attachment));
   }
 
   get hasAttachments(): boolean {
     return this.attachments.length > 0;
   }
 
-  get files(): SlackFileInfo[] {
-    if (!this.message.files) {
+  get files(): SlackFile[] {
+    if (!this._data.files) {
       return [];
     }
-    return this.message.files.map(file => new SlackFileInfo(file));
+    return this._data.files.map(file => new SlackFile(file));
   }
 
   get hasFiles(): boolean {
@@ -450,12 +471,12 @@ export class SlackMessageInfo {
   }
 
   get edited(): { user: string; timestamp: string } | undefined {
-    if (!this.message.edited) {
+    if (!this._data.edited) {
       return undefined;
     }
     return {
-      user: this.message.edited.user,
-      timestamp: new Date(parseFloat(this.message.edited.ts) * 1000).toISOString()
+      user: this._data.edited.user,
+      timestamp: new Date(parseFloat(this._data.edited.ts) * 1000).toISOString()
     };
   }
 
@@ -464,11 +485,11 @@ export class SlackMessageInfo {
   }
 
   get isStarred(): boolean {
-    return Boolean(this.message.is_starred);
+    return Boolean(this._data.is_starred);
   }
 
   get pinnedTo(): string[] {
-    return this.message.pinned_to || [];
+    return this._data.pinned_to || [];
   }
 
   get isPinned(): boolean {
@@ -476,7 +497,7 @@ export class SlackMessageInfo {
   }
 
   get permalink(): string | undefined {
-    return this.message.permalink;
+    return this._data.permalink;
   }
 
   get isBot(): boolean {
@@ -544,120 +565,124 @@ export class SlackMessageInfo {
   }
 }
 
-export interface SlackApiResponse {
-  message: SlackMessage;
-  user?: SlackUser;
-  channel: string;
-  isReply: boolean;
-  threadTs?: string;
-  replies?: SlackMessage[];
-}
-
 export class SlackMessageModel {
-  private data: SlackApiResponse;
-  private userInfo?: SlackUserInfo;
-  private messageInfo: SlackMessageInfo;
+  private message: SlackMessage;
+  private user?: SlackUser;
+  private channel: string;
+  private isReply: boolean;
+  private threadTs?: string;
+  private replies: SlackMessage[];
 
-  constructor(data: SlackApiResponse) {
-    this.data = data;
-    this.userInfo = data.user ? new SlackUserInfo(data.user) : undefined;
-    this.messageInfo = new SlackMessageInfo(data.message);
+  constructor(
+    message: SlackMessage,
+    channel: string,
+    isReply: boolean,
+    user?: SlackUser,
+    threadTs?: string,
+    replies: SlackMessage[] = []
+  ) {
+    this.message = message;
+    this.user = user;
+    this.channel = channel;
+    this.isReply = isReply;
+    this.threadTs = threadTs;
+    this.replies = replies;
   }
 
-  get channel(): string {
-    return this.data.channel;
+  get channelId(): string {
+    return this.channel;
   }
 
   get timestamp(): string {
-    return this.messageInfo.timestamp;
+    return this.message.timestamp;
   }
 
   get formattedTimestamp(): string {
-    return this.messageInfo.formattedTimestamp;
+    return this.message.formattedTimestamp;
   }
 
   get author(): string {
-    return this.userInfo?.bestDisplayName || "Unknown User";
+    return this.user?.bestDisplayName || "Unknown User";
   }
 
   get authorId(): string {
-    return this.messageInfo.user || "Unknown";
+    return this.message.user || "Unknown";
   }
 
-  get authorInfo(): SlackUserInfo | undefined {
-    return this.userInfo;
+  get authorInfo(): SlackUser | undefined {
+    return this.user;
   }
 
   get text(): string {
-    return this.messageInfo.text;
+    return this.message.text;
   }
 
   get messageType(): string {
-    return this.messageInfo.messageType;
+    return this.message.messageType;
   }
 
   get isThreaded(): boolean {
-    return this.messageInfo.isThreaded;
+    return this.message.isThreaded;
   }
 
   get threadTimestamp(): string | undefined {
-    return this.messageInfo.threadTimestamp;
+    return this.message.threadTimestamp;
   }
 
   get replyCount(): number {
-    return this.messageInfo.replyCount;
+    return this.message.replyCount;
   }
 
   get threadInfo(): string {
-    return this.messageInfo.threadInfo;
+    return this.message.threadInfo;
   }
 
-  get isReply(): boolean {
-    return this.data.isReply;
+  get isMessageReply(): boolean {
+    return this.isReply;
   }
 
   get originalThreadTimestamp(): string | undefined {
-    return this.data.threadTs;
+    return this.threadTs;
   }
 
   get messageContext(): string {
     return this.isReply ? "Reply to Thread" : "Original Message";
   }
 
-  get reactions(): SlackReactionInfo[] {
-    return this.messageInfo.reactions;
+  get reactions(): SlackReaction[] {
+    return this.message.reactions;
   }
 
   get hasReactions(): boolean {
-    return this.messageInfo.hasReactions;
+    return this.message.hasReactions;
   }
 
   get formattedReactions(): string {
-    return this.messageInfo.formattedReactions;
+    return this.message.formattedReactions;
   }
 
-  get attachments(): SlackAttachmentInfo[] {
-    return this.messageInfo.attachments;
+  get attachments(): SlackAttachment[] {
+    return this.message.attachments;
   }
 
   get hasAttachments(): boolean {
-    return this.messageInfo.hasAttachments;
+    return this.message.hasAttachments;
   }
 
-  get files(): SlackFileInfo[] {
-    return this.messageInfo.files;
+  get files(): SlackFile[] {
+    return this.message.files;
   }
 
   get hasFiles(): boolean {
-    return this.messageInfo.hasFiles;
+    return this.message.hasFiles;
   }
 
   get formattedFiles(): Array<{ name: string; info: string; url?: string }> {
-    return this.messageInfo.formattedFiles;
+    return this.message.formattedFiles;
   }
 
-  get replies(): SlackMessage[] {
-    return this.data.replies || [];
+  get messageReplies(): SlackMessage[] {
+    return this.replies;
   }
 
   get hasReplies(): boolean {
@@ -669,38 +694,35 @@ export class SlackMessageModel {
       return [];
     }
 
-    return this.replies.map(reply => {
-      const replyInfo = new SlackMessageInfo(reply);
-      return {
-        author: reply.user || "Unknown User",
-        text: replyInfo.text,
-        timestamp: replyInfo.formattedTimestamp
-      };
-    });
+    return this.replies.map(reply => ({
+      author: reply.user || "Unknown User",
+      text: reply.text,
+      timestamp: reply.formattedTimestamp
+    }));
   }
 
   get isEdited(): boolean {
-    return this.messageInfo.isEdited;
+    return this.message.isEdited;
   }
 
   get editedInfo(): { user: string; timestamp: string } | null {
-    return this.messageInfo.edited || null;
+    return this.message.edited || null;
   }
 
   get isStarred(): boolean {
-    return this.messageInfo.isStarred;
+    return this.message.isStarred;
   }
 
   get isPinned(): boolean {
-    return this.messageInfo.isPinned;
+    return this.message.isPinned;
   }
 
   get permalink(): string | undefined {
-    return this.messageInfo.permalink;
+    return this.message.permalink;
   }
 
-  get messageDetails(): SlackMessageInfo {
-    return this.messageInfo;
+  get messageDetails(): SlackMessage {
+    return this.message;
   }
 
   /**
@@ -717,7 +739,7 @@ export class SlackMessageModel {
     authorName?: string;
     fields?: Array<{ title: string; value: string }>;
   }> {
-    return this.messageInfo.getFormattedAttachments();
+    return this.message.getFormattedAttachments();
   }
 
   /**
@@ -734,7 +756,7 @@ export class SlackMessageModel {
     hasFiles: boolean;
     isReply: boolean;
   } {
-    const messageSummary = this.messageInfo.getSummary();
+    const messageSummary = this.message.getSummary();
     return {
       channel: this.channel,
       author: this.author,
@@ -750,31 +772,31 @@ export class SlackMessageModel {
 }
 
 export class SlackThreadModel {
-  private messages: SlackMessage[];
+  private messages: ISlackMessage[];
   private channel: string;
   private threadTs: string;
-  private messageInfos: SlackMessageInfo[];
+  private messageInfos: SlackMessage[];
 
-  constructor(messages: SlackMessage[], channel: string, threadTs: string) {
+  constructor(messages: ISlackMessage[], channel: string, threadTs: string) {
     this.messages = messages;
     this.channel = channel;
     this.threadTs = threadTs;
-    this.messageInfos = messages.map(msg => new SlackMessageInfo(msg));
+    this.messageInfos = messages.map(msg => new SlackMessage(msg));
   }
 
-  get originalMessage(): SlackMessage | undefined {
+  get originalMessage(): ISlackMessage | undefined {
     return this.messages.find(msg => msg.ts === this.threadTs);
   }
 
-  get originalMessageInfo(): SlackMessageInfo | undefined {
+  get originalMessageInfo(): SlackMessage | undefined {
     return this.messageInfos.find(msgInfo => msgInfo.timestamp === this.threadTs);
   }
 
-  get replies(): SlackMessage[] {
+  get replies(): ISlackMessage[] {
     return this.messages.filter(msg => msg.ts !== this.threadTs);
   }
 
-  get replyInfos(): SlackMessageInfo[] {
+  get replyInfos(): SlackMessage[] {
     return this.messageInfos.filter(msgInfo => msgInfo.timestamp !== this.threadTs);
   }
 
@@ -806,7 +828,7 @@ export class SlackThreadModel {
     return this.channel;
   }
 
-  get latestReply(): SlackMessage | undefined {
+  get latestReply(): ISlackMessage | undefined {
     if (this.replies.length === 0) {
       return undefined;
     }
@@ -818,12 +840,12 @@ export class SlackThreadModel {
     });
   }
 
-  get latestReplyInfo(): SlackMessageInfo | undefined {
+  get latestReplyInfo(): SlackMessage | undefined {
     const latestReply = this.latestReply;
     if (!latestReply) {
       return undefined;
     }
-    return new SlackMessageInfo(latestReply);
+    return new SlackMessage(latestReply);
   }
 
   get threadDuration(): number | undefined {
@@ -878,3 +900,143 @@ export class SlackThreadModel {
     };
   }
 }
+
+// HTTP Response Classes
+export class SlackConversationsHistoryResponse {
+  private data: ISlackConversationsHistoryResponse;
+
+  constructor(data: ISlackConversationsHistoryResponse) {
+    this.data = data;
+  }
+
+  get ok(): boolean {
+    return this.data.ok;
+  }
+
+  get messages(): SlackMessage[] {
+    if (!this.data.messages) {
+      return [];
+    }
+    return this.data.messages.map(msg => new SlackMessage(msg));
+  }
+
+  get hasMore(): boolean {
+    return Boolean(this.data.has_more);
+  }
+
+  get pinCount(): number | undefined {
+    return this.data.pin_count;
+  }
+
+  get responseMetadata(): { nextCursor?: string } | undefined {
+    if (!this.data.response_metadata) {
+      return undefined;
+    }
+    return {
+      nextCursor: this.data.response_metadata.next_cursor
+    };
+  }
+
+  get error(): string | undefined {
+    return this.data.error;
+  }
+
+  get hasMessages(): boolean {
+    return this.messages.length > 0;
+  }
+
+  get isSuccess(): boolean {
+    return this.ok && !this.error;
+  }
+}
+
+export class SlackConversationsRepliesResponse {
+  private data: ISlackConversationsRepliesResponse;
+
+  constructor(data: ISlackConversationsRepliesResponse) {
+    this.data = data;
+  }
+
+  get ok(): boolean {
+    return this.data.ok;
+  }
+
+  get messages(): SlackMessage[] {
+    if (!this.data.messages) {
+      return [];
+    }
+    return this.data.messages.map(msg => new SlackMessage(msg));
+  }
+
+  get hasMore(): boolean {
+    return Boolean(this.data.has_more);
+  }
+
+  get responseMetadata(): { nextCursor?: string } | undefined {
+    if (!this.data.response_metadata) {
+      return undefined;
+    }
+    return {
+      nextCursor: this.data.response_metadata.next_cursor
+    };
+  }
+
+  get error(): string | undefined {
+    return this.data.error;
+  }
+
+  get hasMessages(): boolean {
+    return this.messages.length > 0;
+  }
+
+  get isSuccess(): boolean {
+    return this.ok && !this.error;
+  }
+
+  get replies(): SlackMessage[] {
+    // Skip the first message (original message) and get replies
+    return this.messages.slice(1);
+  }
+
+  get hasReplies(): boolean {
+    return this.replies.length > 0;
+  }
+}
+
+export class SlackUsersInfoResponse {
+  private data: ISlackUsersInfoResponse;
+
+  constructor(data: ISlackUsersInfoResponse) {
+    this.data = data;
+  }
+
+  get ok(): boolean {
+    return this.data.ok;
+  }
+
+  get user(): SlackUser | undefined {
+    if (!this.data.user) {
+      return undefined;
+    }
+    return new SlackUser(this.data.user);
+  }
+
+  get error(): string | undefined {
+    return this.data.error;
+  }
+
+  get hasUser(): boolean {
+    return Boolean(this.user);
+  }
+
+  get isSuccess(): boolean {
+    return this.ok && !this.error && this.hasUser;
+  }
+}
+
+// Alias classes for backward compatibility
+export class SlackUserInfo extends SlackUser {}
+export class SlackReactionInfo extends SlackReaction {}
+export class SlackAttachmentInfo extends SlackAttachment {}
+export class SlackFileInfo extends SlackFile {}
+export class SlackMessageInfo extends SlackMessage {}

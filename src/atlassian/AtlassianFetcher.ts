@@ -1,13 +1,9 @@
 import { JSDOM } from "jsdom";
-import { ConfluenceRequest, JiraRequest } from "./types.js";
-import { Constants } from "./constants.js";
+import { ConfluenceRequest, JiraRequest } from "./AtlassianTypes.js";
+import { Constants } from "../constants.js";
 import { ConfluencePage, JiraTicket, ConfluenceApiResponse, JiraApiResponse } from "./AtlassianModels.js";
-import { ResponseBuilder } from "./ResponseBuilder.js";
-
-interface AtlassianResult {
-  content: Array<{ type: "text"; text: string }>;
-  isError: boolean;
-}
+import { ResponseBuilder } from "../ResponseBuilder.js";
+import { McpResult } from "../McpModels.js";
 
 export class AtlassianFetcher {
   private static readonly DEFAULT_MAX_LENGTH = Constants.DEFAULT_MAX_LENGTH;
@@ -54,14 +50,8 @@ export class AtlassianFetcher {
   /**
    * Create error result
    */
-  private static createErrorResult(message: string): AtlassianResult {
-    return {
-      content: [{ 
-        type: "text", 
-        text: `Error: ${message}` 
-      }],
-      isError: true,
-    };
+  private static createErrorResult(message: string): McpResult {
+    return McpResult.error(message);
   }
 
   /**
@@ -82,7 +72,7 @@ export class AtlassianFetcher {
   /**
    * Handle API response errors
    */
-  private static handleApiError(response: Response, resourceType: string, resourceId: string): AtlassianResult {
+  private static handleApiError(response: Response, resourceType: string, resourceId: string): McpResult {
     if (response.status === 401) {
       return this.createErrorResult("Authentication failed. Please check your ATLASSIAN_USER and ATLASSIAN_API_TOKEN");
     }
@@ -161,7 +151,7 @@ export class AtlassianFetcher {
   /**
    * Fetch Confluence page content
    */
-  static async fetchConfluencePage(request: ConfluenceRequest): Promise<AtlassianResult> {
+  static async fetchConfluencePage(request: ConfluenceRequest): Promise<McpResult> {
     try {
       const domain = this.extractDomain(request.url);
       
@@ -189,10 +179,7 @@ export class AtlassianFetcher {
         request.maxLength ?? this.DEFAULT_MAX_LENGTH
       );
       
-      return {
-        content: [{ type: "text", text: result }],
-        isError: false,
-      };
+      return McpResult.success(result);
 
     } catch (error) {
       return this.createErrorResult((error as Error).message);
@@ -202,7 +189,7 @@ export class AtlassianFetcher {
   /**
    * Fetch Jira ticket information
    */
-  static async fetchJiraTicket(request: JiraRequest): Promise<AtlassianResult> {
+  static async fetchJiraTicket(request: JiraRequest): Promise<McpResult> {
     try {
       const domain = this.extractDomain(request.url);
       
@@ -231,10 +218,7 @@ export class AtlassianFetcher {
         request.maxLength ?? this.DEFAULT_MAX_LENGTH
       );
       
-      return {
-        content: [{ type: "text", text: result }],
-        isError: false,
-      };
+      return McpResult.success(result);
 
     } catch (error) {
       return this.createErrorResult((error as Error).message);
