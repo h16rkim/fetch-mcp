@@ -12,6 +12,7 @@ import {
   validateJiraRequest,
   validateSlackRequest,
   validateGitHubRequest,
+  validateGitHubIssueRequest,
 } from "./validate.js";
 import { Fetcher } from "./Fetcher.js";
 import { AtlassianFetcher } from "./atlassian/AtlassianFetcher.js";
@@ -138,6 +139,22 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ["url"],
         },
       },
+      {
+        name: Constants.FETCH_GITHUB_ISSUE,
+        description:
+          "Fetch GitHub Issue information using GitHub API. Requires GITHUB_ACCESS_TOKEN environment variable.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            url: {
+              type: "string",
+              description:
+                "GitHub Issue URL (e.g., https://github.com/owner/repo/issues/123)",
+            },
+          },
+          required: ["url"],
+        },
+      },
     ],
   };
 });
@@ -179,6 +196,13 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
     const githubResult = await GitHubFetcher.fetchGitHubPullRequest(validatedArgs);
 
     return githubResult.toJson();
+  }
+
+  if (request.params.name === Constants.FETCH_GITHUB_ISSUE) {
+    const validatedArgs = validateGitHubIssueRequest(args);
+    const githubIssueResult = await GitHubFetcher.fetchGitHubIssue(validatedArgs);
+
+    return githubIssueResult.toJson();
   }
 
   throw new Error("Tool not found");

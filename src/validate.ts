@@ -1,7 +1,7 @@
 import { RequestPayload } from "./types.js";
 import { ConfluenceRequest, JiraRequest } from "./atlassian/AtlassianTypes.js";
 import { ISlackRequest } from "./slack/SlackTypes.js";
-import { IGitHubRequest } from "./github/GitHubTypes.js";
+import { IGitHubRequest, IGitHubIssueRequest } from "./github/GitHubTypes.js";
 import { Constants } from "./constants.js";
 
 // Base validation function that can be curried for optional validation
@@ -47,6 +47,18 @@ function validateGitHubPullRequestUrl(url: string, fieldName: string = "url"): v
   if (!githubPrPattern.test(url)) {
     throw new Error(
       `Invalid ${fieldName}: must be a GitHub Pull Request URL (e.g., https://github.com/owner/repo/pull/123)`
+    );
+  }
+}
+
+function validateGitHubIssueUrl(url: string, fieldName: string = "url"): void {
+  validateUrl(url, fieldName);
+  
+  // Check if it's a GitHub Issue URL
+  const githubIssuePattern = /github\.com\/[^\/]+\/[^\/]+\/issues\/\d+/;
+  if (!githubIssuePattern.test(url)) {
+    throw new Error(
+      `Invalid ${fieldName}: must be a GitHub Issue URL (e.g., https://github.com/owner/repo/issues/123)`
     );
   }
 }
@@ -160,6 +172,17 @@ export function validateGitHubRequest(args: any): IGitHubRequest {
 
   const url = validateRequiredString(args.url, "url");
   validateGitHubPullRequestUrl(url);
+
+  return {
+    url,
+  };
+}
+
+export function validateGitHubIssueRequest(args: any): IGitHubIssueRequest {
+  validateObject(args);
+
+  const url = validateRequiredString(args.url, "url");
+  validateGitHubIssueUrl(url);
 
   return {
     url,

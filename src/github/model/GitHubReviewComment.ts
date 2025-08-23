@@ -1,4 +1,4 @@
-import { IGitHubReviewCommentsResponse, IGitHubReviewComment } from "../GitHubTypes.js";
+import { IGitHubReviewComment } from "../GitHubTypes.js";
 import { GitHubUser } from "./GitHubUser.js";
 
 export class GitHubReviewComment {
@@ -137,85 +137,5 @@ export class GitHubReviewComment {
     }
     
     return `${parts.join(" ")}\n${this.body}`;
-  }
-}
-
-export class GitHubReviewCommentsResponse {
-  private _data: IGitHubReviewCommentsResponse;
-
-  constructor(data: IGitHubReviewCommentsResponse) {
-    this._data = data;
-  }
-
-  get ok(): boolean {
-    return this._data.ok;
-  }
-
-  get reviewComments(): GitHubReviewComment[] {
-    if (!this._data.data) {
-      return [];
-    }
-    return this._data.data.map(comment => new GitHubReviewComment(comment));
-  }
-
-  get error(): string | undefined {
-    return this._data.error;
-  }
-
-  get hasReviewComments(): boolean {
-    return this.reviewComments.length > 0;
-  }
-
-  get isSuccess(): boolean {
-    return this.ok && !this.error;
-  }
-
-  get reviewCommentCount(): number {
-    return this.reviewComments.length;
-  }
-
-  get sortedByCreatedAt(): GitHubReviewComment[] {
-    return [...this.reviewComments].sort((a, b) => 
-      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-    );
-  }
-
-  get latestReviewComment(): GitHubReviewComment | undefined {
-    if (this.reviewComments.length === 0) {
-      return undefined;
-    }
-    return this.reviewComments.reduce((latest, comment) => 
-      new Date(comment.createdAt) > new Date(latest.createdAt) ? comment : latest
-    );
-  }
-
-  get uniqueAuthors(): string[] {
-    const authors = new Set(this.reviewComments.map(comment => comment.user.login));
-    return Array.from(authors);
-  }
-
-  get uniqueFiles(): string[] {
-    const files = new Set(this.reviewComments.map(comment => comment.path));
-    return Array.from(files);
-  }
-
-  get replyComments(): GitHubReviewComment[] {
-    return this.reviewComments.filter(comment => comment.isReply);
-  }
-
-  get topLevelComments(): GitHubReviewComment[] {
-    return this.reviewComments.filter(comment => !comment.isReply);
-  }
-
-  getCommentsByFile(filePath: string): GitHubReviewComment[] {
-    return this.reviewComments.filter(comment => comment.path === filePath);
-  }
-
-  getCommentsByAuthor(authorLogin: string): GitHubReviewComment[] {
-    return this.reviewComments.filter(comment => comment.user.login === authorLogin);
-  }
-
-  getCommentsByCommit(commitId: string): GitHubReviewComment[] {
-    return this.reviewComments.filter(comment => comment.commitId === commitId);
   }
 }

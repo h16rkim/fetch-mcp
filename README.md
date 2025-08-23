@@ -44,12 +44,10 @@ src/
 │       ├── GitHubCommit.ts
 │       ├── GitHubPullRequest.ts
 │       ├── GitHubPullRequestModel.ts
-│       ├── GitHubPullRequestResponse.ts
-│       ├── GitHubFilesResponse.ts
-│       ├── GitHubCommentsResponse.ts
-│       ├── GitHubReviewsResponse.ts
-│       ├── GitHubCommitsResponse.ts
-│       └── GitHubReviewCommentsResponse.ts
+│       ├── GitHubReviewCommentsResponse.ts
+│       ├── GitHubIssue.ts
+│       ├── GitHubIssueComment.ts
+│       └── GitHubIssueModel.ts
 ├── types.ts                # Common type definitions (IMcpResult)
 ├── McpModels.ts           # MCP result model (McpResult class)
 ├── constants.ts           # Application constants and configuration
@@ -134,6 +132,19 @@ src/
     - Reviews and review comments
     - Issue comments
     - Merge status and verification details
+
+- **fetch_github_issue**
+  - Fetch GitHub Issue information using GitHub API
+  - Requires `GITHUB_ACCESS_TOKEN` environment variable
+  - Input:
+    - `url` (string, required): GitHub Issue URL (e.g., https://github.com/owner/repo/issues/123)
+  - Returns comprehensive Issue information including:
+    - Issue title, description, status, and metadata
+    - Author, assignees, and labels
+    - Milestone information
+    - All comments with author details
+    - Comment statistics and author associations
+    - Creation and update timestamps
 
 ### Resources
 
@@ -261,6 +272,8 @@ Or use the published package:
 - Review and comment aggregation
 - Branch and merge status information
 - Labels, assignees, and milestone tracking
+- Issue information retrieval with comprehensive details
+- Issue comments with author associations and statistics
 - Parallel API calls for optimal performance
 - Proper authentication handling with Personal Access Tokens
 
@@ -283,10 +296,10 @@ Or use the published package:
 
 To add a new service integration:
 
-1. Create a new directory under `src/` (e.g., `src/github/`)
-2. Add type definitions with "I" prefix (e.g., `GitHubTypes.ts`)
-3. Create individual model classes in `model/` directory (e.g., `model/GitHubRepository.ts`)
-4. Implement the fetcher class (e.g., `GitHubFetcher.ts`)
+1. Create a new directory under `src/` (e.g., `src/newservice/`)
+2. Add type definitions with "I" prefix (e.g., `NewServiceTypes.ts`)
+3. Create individual model classes in `model/` directory (e.g., `model/NewServiceItem.ts`)
+4. Implement the fetcher class (e.g., `NewServiceFetcher.ts`)
 5. Add constants to `constants.ts`
 6. Add validation to `validate.ts`
 7. Register the tool in `index.ts`

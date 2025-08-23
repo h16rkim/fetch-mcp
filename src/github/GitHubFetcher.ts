@@ -1,21 +1,26 @@
 import {
   IGitHubRequest,
   IGitHubPullRequestUrl,
-  IGitHubPullRequestResponse,
-  IGitHubFilesResponse,
-  IGitHubCommentsResponse,
-  IGitHubReviewsResponse,
-  IGitHubCommitsResponse,
-  IGitHubReviewCommentsResponse,
+  IGitHubIssueUrl,
+  IGitHubIssueRequest,
+  IGitHubPullRequest,
+  IGitHubFile,
+  IGitHubComment,
+  IGitHubReview,
+  IGitHubReviewComment,
+  IGitHubIssue,
+  IGitHubIssueComment,
 } from "./GitHubTypes.js";
 import { Constants } from "../constants.js";
 import { GitHubPullRequestModel } from "./model/GitHubPullRequestModel.js";
-import { GitHubPullRequestResponse } from "./model/GitHubPullRequestResponse.js";
-import { GitHubFilesResponse } from "./model/GitHubFilesResponse.js";
-import { GitHubCommentsResponse } from "./model/GitHubCommentsResponse.js";
-import { GitHubReviewsResponse } from "./model/GitHubReviewsResponse.js";
-import { GitHubCommitsResponse } from "./model/GitHubCommitsResponse.js";
-import { GitHubReviewCommentsResponse } from "./model/GitHubReviewCommentsResponse.js";
+import { GitHubIssueModel } from "./model/GitHubIssueModel.js";
+import { GitHubPullRequest } from "./model/GitHubPullRequest.js";
+import { GitHubFile } from "./model/GitHubFile.js";
+import { GitHubComment } from "./model/GitHubComment.js";
+import { GitHubReview } from "./model/GitHubReview.js";
+import { GitHubReviewComment } from "./model/GitHubReviewComment.js";
+import { GitHubIssue } from "./model/GitHubIssue.js";
+import { GitHubIssueComment } from "./model/GitHubIssueComment.js";
 import { McpResult } from "../McpModels.js";
 
 export class GitHubFetcher {
@@ -61,6 +66,30 @@ export class GitHubFetcher {
   }
 
   /**
+   * Parse GitHub Issue URL to extract owner, repo, and issue number
+   */
+  private static parseGitHubIssueUrl(url: string): IGitHubIssueUrl {
+    // URL format: https://github.com/owner/repo/issues/123
+    const urlMatch = url.match(/github\.com\/([^\/]+)\/([^\/]+)\/issues\/(\d+)/);
+
+    if (!urlMatch) {
+      throw new Error(
+        "Invalid GitHub Issue URL format. Expected format: https://github.com/owner/repo/issues/number"
+      );
+    }
+
+    const owner = urlMatch[1];
+    const repo = urlMatch[2];
+    const issueNumber = parseInt(urlMatch[3], 10);
+
+    return {
+      owner,
+      repo,
+      issueNumber,
+    };
+  }
+
+  /**
    * Create error result
    */
   private static createErrorResult(message: string): McpResult {
@@ -93,40 +122,25 @@ export class GitHubFetcher {
     owner: string,
     repo: string,
     pullNumber: number
-  ): Promise<GitHubPullRequestResponse> {
+  ): Promise<GitHubPullRequest | null> {
     try {
       const url = `${this.API_BASE_URL}/repos/${owner}/${repo}/pulls/${pullNumber}`;
       const response = await this.makeGitHubApiRequest(url, accessToken);
 
       if (!response.ok) {
         if (response.status === 404) {
-          return new GitHubPullRequestResponse({
-            ok: false,
-            error: "Pull Request not found or access denied",
-          });
+          throw new Error("Pull Request not found or access denied");
         } else if (response.status === 403) {
-          return new GitHubPullRequestResponse({
-            ok: false,
-            error: "Access denied. Check your GitHub token permissions",
-          });
+          throw new Error("Access denied. Check your GitHub token permissions");
         } else {
-          return new GitHubPullRequestResponse({
-            ok: false,
-            error: `GitHub API error: ${response.status} ${response.statusText}`,
-          });
+          throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
         }
       }
 
-      const data = await response.json();
-      return new GitHubPullRequestResponse({
-        ok: true,
-        data,
-      });
+      const data: IGitHubPullRequest = await response.json();
+      return new GitHubPullRequest(data);
     } catch (error) {
-      return new GitHubPullRequestResponse({
-        ok: false,
-        error: `Failed to fetch Pull Request: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      });
+      throw new Error(`Failed to fetch Pull Request: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -138,28 +152,19 @@ export class GitHubFetcher {
     owner: string,
     repo: string,
     pullNumber: number
-  ): Promise<GitHubFilesResponse> {
+  ): Promise<GitHubFile[]> {
     try {
       const url = `${this.API_BASE_URL}/repos/${owner}/${repo}/pulls/${pullNumber}/files`;
       const response = await this.makeGitHubApiRequest(url, accessToken);
 
       if (!response.ok) {
-        return new GitHubFilesResponse({
-          ok: false,
-          error: `Failed to fetch files: ${response.status} ${response.statusText}`,
-        });
+        throw new Error(`Failed to fetch files: ${response.status} ${response.statusText}`);
       }
 
-      const data = await response.json();
-      return new GitHubFilesResponse({
-        ok: true,
-        data,
-      });
+      const data: IGitHubFile[] = await response.json();
+      return data.map(file => new GitHubFile(file));
     } catch (error) {
-      return new GitHubFilesResponse({
-        ok: false,
-        error: `Failed to fetch Pull Request files: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      });
+      throw new Error(`Failed to fetch Pull Request files: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -171,28 +176,19 @@ export class GitHubFetcher {
     owner: string,
     repo: string,
     pullNumber: number
-  ): Promise<GitHubCommentsResponse> {
+  ): Promise<GitHubComment[]> {
     try {
       const url = `${this.API_BASE_URL}/repos/${owner}/${repo}/issues/${pullNumber}/comments`;
       const response = await this.makeGitHubApiRequest(url, accessToken);
 
       if (!response.ok) {
-        return new GitHubCommentsResponse({
-          ok: false,
-          error: `Failed to fetch comments: ${response.status} ${response.statusText}`,
-        });
+        throw new Error(`Failed to fetch comments: ${response.status} ${response.statusText}`);
       }
 
-      const data = await response.json();
-      return new GitHubCommentsResponse({
-        ok: true,
-        data,
-      });
+      const data: IGitHubComment[] = await response.json();
+      return data.map(comment => new GitHubComment(comment));
     } catch (error) {
-      return new GitHubCommentsResponse({
-        ok: false,
-        error: `Failed to fetch Pull Request comments: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      });
+      throw new Error(`Failed to fetch Pull Request comments: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -204,28 +200,19 @@ export class GitHubFetcher {
     owner: string,
     repo: string,
     pullNumber: number
-  ): Promise<GitHubReviewsResponse> {
+  ): Promise<GitHubReview[]> {
     try {
       const url = `${this.API_BASE_URL}/repos/${owner}/${repo}/pulls/${pullNumber}/reviews`;
       const response = await this.makeGitHubApiRequest(url, accessToken);
 
       if (!response.ok) {
-        return new GitHubReviewsResponse({
-          ok: false,
-          error: `Failed to fetch reviews: ${response.status} ${response.statusText}`,
-        });
+        throw new Error(`Failed to fetch reviews: ${response.status} ${response.statusText}`);
       }
 
-      const data = await response.json();
-      return new GitHubReviewsResponse({
-        ok: true,
-        data,
-      });
+      const data: IGitHubReview[] = await response.json();
+      return data.map(review => new GitHubReview(review));
     } catch (error) {
-      return new GitHubReviewsResponse({
-        ok: false,
-        error: `Failed to fetch Pull Request reviews: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      });
+      throw new Error(`Failed to fetch Pull Request reviews: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -237,61 +224,73 @@ export class GitHubFetcher {
     owner: string,
     repo: string,
     pullNumber: number
-  ): Promise<GitHubReviewCommentsResponse> {
+  ): Promise<GitHubReviewComment[]> {
     try {
       const url = `${this.API_BASE_URL}/repos/${owner}/${repo}/pulls/${pullNumber}/comments`;
       const response = await this.makeGitHubApiRequest(url, accessToken);
 
       if (!response.ok) {
-        return new GitHubReviewCommentsResponse({
-          ok: false,
-          error: `Failed to fetch review comments: ${response.status} ${response.statusText}`,
-        });
+        throw new Error(`Failed to fetch review comments: ${response.status} ${response.statusText}`);
       }
 
-      const data = await response.json();
-      return new GitHubReviewCommentsResponse({
-        ok: true,
-        data,
-      });
+      const data: IGitHubReviewComment[] = await response.json();
+      return data.map(comment => new GitHubReviewComment(comment));
     } catch (error) {
-      return new GitHubReviewCommentsResponse({
-        ok: false,
-        error: `Failed to fetch Pull Request review comments: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      });
+      throw new Error(`Failed to fetch Pull Request review comments: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
   /**
-   * Get Pull Request commits
+   * Get Issue information
    */
-  private static async getPullRequestCommits(
+  private static async getIssue(
     accessToken: string,
     owner: string,
     repo: string,
-    pullNumber: number
-  ): Promise<GitHubCommitsResponse> {
+    issueNumber: number
+  ): Promise<GitHubIssue | null> {
     try {
-      const url = `${this.API_BASE_URL}/repos/${owner}/${repo}/pulls/${pullNumber}/commits`;
+      const url = `${this.API_BASE_URL}/repos/${owner}/${repo}/issues/${issueNumber}`;
       const response = await this.makeGitHubApiRequest(url, accessToken);
 
       if (!response.ok) {
-        return new GitHubCommitsResponse({
-          ok: false,
-          error: `Failed to fetch commits: ${response.status} ${response.statusText}`,
-        });
+        if (response.status === 404) {
+          throw new Error("Issue not found or access denied");
+        } else if (response.status === 403) {
+          throw new Error("Access denied. Check your GitHub token permissions");
+        } else {
+          throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
+        }
       }
 
-      const data = await response.json();
-      return new GitHubCommitsResponse({
-        ok: true,
-        data,
-      });
+      const data: IGitHubIssue = await response.json();
+      return new GitHubIssue(data);
     } catch (error) {
-      return new GitHubCommitsResponse({
-        ok: false,
-        error: `Failed to fetch Pull Request commits: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      });
+      throw new Error(`Failed to fetch Issue: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Get Issue comments
+   */
+  private static async getIssueComments(
+    accessToken: string,
+    owner: string,
+    repo: string,
+    issueNumber: number
+  ): Promise<GitHubIssueComment[]> {
+    try {
+      const url = `${this.API_BASE_URL}/repos/${owner}/${repo}/issues/${issueNumber}/comments`;
+      const response = await this.makeGitHubApiRequest(url, accessToken);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch issue comments: ${response.status} ${response.statusText}`);
+      }
+
+      const data: IGitHubIssueComment[] = await response.json();
+      return data.map(comment => new GitHubIssueComment(comment));
+    } catch (error) {
+      throw new Error(`Failed to fetch Issue comments: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -307,34 +306,23 @@ export class GitHubFetcher {
 
       // Fetch all PR data in parallel for better performance
       const [
-        pullRequestResponse,
-        filesResponse,
-        commentsResponse,
-        reviewsResponse,
-        reviewCommentsResponse,
-        commitsResponse,
+        pullRequest,
+        files,
+        comments,
+        reviews,
+        reviewComments,
       ] = await Promise.all([
         this.getPullRequest(accessToken, owner, repo, pullNumber),
         this.getPullRequestFiles(accessToken, owner, repo, pullNumber),
         this.getPullRequestComments(accessToken, owner, repo, pullNumber),
         this.getPullRequestReviews(accessToken, owner, repo, pullNumber),
         this.getPullRequestReviewComments(accessToken, owner, repo, pullNumber),
-        this.getPullRequestCommits(accessToken, owner, repo, pullNumber),
       ]);
 
       // Check if the main PR request failed
-      if (!pullRequestResponse.isSuccess) {
-        return this.createErrorResult(
-          pullRequestResponse.error || "Failed to fetch Pull Request"
-        );
+      if (!pullRequest) {
+        return this.createErrorResult("Failed to fetch Pull Request");
       }
-
-      const pullRequest = pullRequestResponse.pullRequest!;
-      const files = filesResponse.isSuccess ? filesResponse.files : [];
-      const comments = commentsResponse.isSuccess ? commentsResponse.comments : [];
-      const reviews = reviewsResponse.isSuccess ? reviewsResponse.reviews : [];
-      const reviewComments = reviewCommentsResponse.isSuccess ? reviewCommentsResponse.reviewComments : [];
-      const commits = commitsResponse.isSuccess ? commitsResponse.commits : [];
 
       // Combine review comments with regular comments for comprehensive view
       const allComments = [...comments];
@@ -357,8 +345,7 @@ export class GitHubFetcher {
         pullRequest,
         files,
         allComments,
-        reviews,
-        commits
+        reviews
       );
 
       // Generate comprehensive summary
@@ -368,6 +355,44 @@ export class GitHubFetcher {
     } catch (error) {
       return this.createErrorResult(
         `Failed to fetch GitHub Pull Request: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * Fetch GitHub Issue information
+   */
+  public static async fetchGitHubIssue(
+    request: IGitHubIssueRequest
+  ): Promise<McpResult> {
+    try {
+      const accessToken = this.getAccessToken();
+      const { owner, repo, issueNumber } = this.parseGitHubIssueUrl(request.url);
+
+      // Fetch Issue data in parallel for better performance
+      const [
+        issue,
+        comments,
+      ] = await Promise.all([
+        this.getIssue(accessToken, owner, repo, issueNumber),
+        this.getIssueComments(accessToken, owner, repo, issueNumber),
+      ]);
+
+      // Check if the main Issue request failed
+      if (!issue) {
+        return this.createErrorResult("Failed to fetch Issue");
+      }
+
+      // Create comprehensive Issue model
+      const issueModel = new GitHubIssueModel(issue, comments);
+
+      // Generate comprehensive summary
+      const summary = issueModel.generateSummary();
+
+      return McpResult.success(summary);
+    } catch (error) {
+      return this.createErrorResult(
+        `Failed to fetch GitHub Issue: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
   }

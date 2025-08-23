@@ -5,6 +5,7 @@ export class Constants {
   static readonly FETCH_JIRA_ISSUE = "fetch_jira_issue";
   static readonly FETCH_SLACK_MESSAGE = "fetch_slack_message";
   static readonly FETCH_GITHUB_PULL_REQUEST = "fetch_github_pull_request";
+  static readonly FETCH_GITHUB_ISSUE = "fetch_github_issue";
 
   // Default values
   static readonly DEFAULT_MAX_LENGTH = 5000;

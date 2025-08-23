@@ -2,27 +2,23 @@ import { GitHubPullRequest } from "./GitHubPullRequest.js";
 import { GitHubFile } from "./GitHubFile.js";
 import { GitHubComment } from "./GitHubComment.js";
 import { GitHubReview } from "./GitHubReview.js";
-import { GitHubCommit } from "./GitHubCommit.js";
 
 export class GitHubPullRequestModel {
   private _pullRequest: GitHubPullRequest;
   private _files: GitHubFile[];
   private _comments: GitHubComment[];
   private _reviews: GitHubReview[];
-  private _commits: GitHubCommit[];
 
   constructor(
     pullRequest: GitHubPullRequest,
     files: GitHubFile[] = [],
     comments: GitHubComment[] = [],
-    reviews: GitHubReview[] = [],
-    commits: GitHubCommit[] = []
+    reviews: GitHubReview[] = []
   ) {
     this._pullRequest = pullRequest;
     this._files = files;
     this._comments = comments;
     this._reviews = reviews;
-    this._commits = commits;
   }
 
   get pullRequest(): GitHubPullRequest {
@@ -41,10 +37,6 @@ export class GitHubPullRequestModel {
     return this._reviews;
   }
 
-  get commits(): GitHubCommit[] {
-    return this._commits;
-  }
-
   get hasFiles(): boolean {
     return this._files.length > 0;
   }
@@ -55,10 +47,6 @@ export class GitHubPullRequestModel {
 
   get hasReviews(): boolean {
     return this._reviews.length > 0;
-  }
-
-  get hasCommits(): boolean {
-    return this._commits.length > 0;
   }
 
   get approvedReviews(): GitHubReview[] {
@@ -141,14 +129,6 @@ export class GitHubPullRequestModel {
       sections.push(`\n## Files Changed (${this._files.length})`);
       this._files.forEach(file => {
         sections.push(`- ${file.displayInfo}`);
-      });
-    }
-
-    // Commits
-    if (this.hasCommits) {
-      sections.push(`\n## Commits (${this._commits.length})`);
-      this._commits.forEach(commit => {
-        sections.push(`- ${commit.displayInfo}`);
       });
     }
 

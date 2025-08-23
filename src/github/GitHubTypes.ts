@@ -202,41 +202,47 @@ export interface IGitHubReview {
   author_association: string;
 }
 
-// API Response Wrapper Types
-export interface IGitHubPullRequestResponse {
-  ok: boolean;
-  error?: string;
-  data?: IGitHubPullRequest;
+// GitHub Issue Types
+export interface IGitHubIssue {
+  id: number;
+  number: number;
+  title: string;
+  body?: string;
+  state: "open" | "closed";
+  locked: boolean;
+  user: IGitHubUser;
+  assignee?: IGitHubUser;
+  assignees: IGitHubUser[];
+  labels: IGitHubLabel[];
+  milestone?: IGitHubMilestone;
+  html_url: string;
+  repository_url: string;
+  comments_url: string;
+  events_url: string;
+  created_at: string;
+  updated_at: string;
+  closed_at?: string;
+  closed_by?: IGitHubUser;
+  comments: number;
+  author_association: string;
+  state_reason?: string;
+  draft?: boolean;
 }
 
-export interface IGitHubFilesResponse {
-  ok: boolean;
-  error?: string;
-  data?: IGitHubFile[];
+export interface IGitHubIssueComment {
+  id: number;
+  user: IGitHubUser;
+  created_at: string;
+  updated_at: string;
+  body: string;
+  html_url: string;
+  issue_url: string;
+  author_association: string;
 }
 
-export interface IGitHubCommitsResponse {
-  ok: boolean;
-  error?: string;
-  data?: IGitHubCommit[];
-}
-
-export interface IGitHubCommentsResponse {
-  ok: boolean;
-  error?: string;
-  data?: IGitHubComment[];
-}
-
-export interface IGitHubReviewCommentsResponse {
-  ok: boolean;
-  error?: string;
-  data?: IGitHubReviewComment[];
-}
-
-export interface IGitHubReviewsResponse {
-  ok: boolean;
-  error?: string;
-  data?: IGitHubReview[];
+// Issue Request Type
+export interface IGitHubIssueRequest {
+  url: string;
 }
 
 // URL Parsing Types
@@ -244,4 +250,10 @@ export interface IGitHubPullRequestUrl {
   owner: string;
   repo: string;
   pullNumber: number;
+}
+
+export interface IGitHubIssueUrl {
+  owner: string;
+  repo: string;
+  issueNumber: number;
 }
