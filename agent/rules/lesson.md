@@ -847,3 +847,194 @@
 - **Over-engineering simple structures**: Don't create domain classes for simple 1-2 property objects
 - **Inconsistent extraction**: Don't extract some nested objects but leave others as literals
 - **Breaking existing interfaces**: Ensure refactored classes still implement expected interfaces
+
+### 18. Validation Logic Refactoring & Service-Specific Organization (2025-08-23 Update)
+
+#### ✅ What to Do
+- **Create service-specific Validator classes**
+  ```typescript
+  // Good: Service-specific validators in their own directories
+  src/github/GitHubValidator.ts
+  src/slack/SlackValidator.ts
+  src/atlassian/AtlassianValidator.ts
+  src/GeneralValidator.ts
+  
+  // Each validator handles its own service validation
+  export class GitHubValidator extends BaseValidator {
+    static validateGitHubRequest(args: any): IGitHubRequest { ... }
+    static validateGitHubIssueRequest(args: any): IGitHubIssueRequest { ... }
+  }
+  
+  // Bad: Monolithic validation file
+  src/validate.ts // 200+ lines with all validations mixed
+  ```
+
+- **Use BaseValidator for common validation utilities**
+  ```typescript
+  // Good: Shared validation utilities in base class
+  export abstract class BaseValidator {
+    protected static validateObject(args: any, fieldName: string): void { ... }
+    protected static validateRequiredString(value: any, fieldName: string): string { ... }
+    protected static validateUrl(url: string, fieldName: string): void { ... }
+    protected static validateUrlPattern(url: string, pattern: RegExp, fieldName: string, exampleUrl: string): void { ... }
+  }
+  
+  // Service validators extend base functionality
+  export class SlackValidator extends BaseValidator {
+    private static readonly SLACK_MESSAGE_URL_PATTERN = /https:\/\/[^.]+\.slack\.com\/archives\/[A-Z0-9]+\/p\d+/;
+    
+    static validateSlackRequest(args: any): ISlackRequest {
+      this.validateObject(args);
+      const url = this.validateRequiredString(args.url, "url");
+      this.validateSlackMessageUrl(url);
+      return { url, maxLength: this.withDefault(...) };
+    }
+  }
+  ```
+
+- **Eliminate intermediate validation layers**
+  ```typescript
+  // Good: Direct validator usage
+  import { GitHubValidator } from "./github/GitHubValidator.js";
+  import { SlackValidator } from "./slack/SlackValidator.js";
+  
+  const validatedArgs = GitHubValidator.validateGitHubRequest(args);
+  const slackArgs = SlackValidator.validateSlackRequest(args);
+  
+  // Bad: Unnecessary intermediate functions
+  export function validateGitHubRequest(args: any): IGitHubRequest {
+    return GitHubValidator.validateGitHubRequest(args); // Just delegation
+  }
+  ```
+
+- **Add service-specific validation features**
+  ```typescript
+  // Good: Service-specific validation methods
+  export class GitHubValidator extends BaseValidator {
+    static validateToken(token: string): void {
+      if (!token.startsWith('ghp_') && !token.startsWith('github_pat_')) {
+        throw new Error('Invalid GitHub token format');
+      }
+    }
+    
+    static extractOwnerAndRepo(url: string): { owner: string; repo: string } {
+      const match = url.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+      if (!match) throw new Error('Cannot extract owner and repository');
+      return { owner: match[1], repo: match[2] };
+    }
+  }
+  ```
+
+- **Co-locate validators with their services**
+  ```typescript
+  // Good: Validators live with their services
+  src/github/
+  ├── GitHubValidator.ts    # GitHub validation logic
+  ├── GitHubFetcher.ts      # GitHub API logic
+  ├── GitHubTypes.ts        # GitHub type definitions
+  └── model/                # GitHub model classes
+  
+  // Bad: Centralized validation directory
+  src/validation/
+  ├── GitHubValidator.ts    # Separated from GitHub service
+  ├── SlackValidator.ts     # Separated from Slack service
+  └── AtlassianValidator.ts # Separated from Atlassian service
+  ```
+
+#### ✅ Benefits of Service-Specific Validation
+- **Improved Modularity**: Each service manages its own validation logic
+- **Enhanced Cohesion**: Related validation code stays with the service it validates
+- **Better Extensibility**: Easy to add service-specific validation features
+- **Reduced Dependencies**: No need for centralized validation files
+- **Clearer Ownership**: Each service team owns their validation logic
+- **Tree-Shaking Optimization**: Unused validators are not included in bundles
+
+#### ❌ What to Avoid
+- **Monolithic validation files**
+  ```typescript
+  // Bad: One large file with all validations
+  export function validateGitHubRequest(args: any): IGitHubRequest { ... }
+  export function validateSlackRequest(args: any): ISlackRequest { ... }
+  export function validateJiraRequest(args: any): JiraRequest { ... }
+  export function validateConfluenceRequest(args: any): ConfluenceRequest { ... }
+  // ... 200+ lines of mixed validation logic
+  ```
+
+- **Unnecessary validation wrapper functions**
+  ```typescript
+  // Bad: Wrapper functions that just delegate
+  export function validateGitHubRequest(args: any): IGitHubRequest {
+    return GitHubValidator.validateGitHubRequest(args);
+  }
+  
+  // Good: Use validator directly
+  const validatedArgs = GitHubValidator.validateGitHubRequest(args);
+  ```
+
+- **Centralized validation directories when not needed**
+  ```typescript
+  // Bad: Artificial separation from services
+  src/validation/GitHubValidator.ts  // Far from GitHub service
+  src/github/GitHubFetcher.ts        // Has to import from distant location
+  
+  // Good: Co-located with service
+  src/github/GitHubValidator.ts      // Next to GitHubFetcher.ts
+  src/github/GitHubFetcher.ts        // Can import locally
+  ```
+
+### 19. Refactoring Workflow & Incremental Improvement (2025-08-23 Update)
+
+#### ✅ What to Do
+- **Follow systematic refactoring steps**
+  ```typescript
+  // Step 1: Create new structure alongside old
+  src/validation/BaseValidator.ts        # New base class
+  src/github/GitHubValidator.ts          # New service validator
+  src/validate.ts                        # Keep old file temporarily
+  
+  // Step 2: Update consumers to use new structure
+  import { GitHubValidator } from "./github/GitHubValidator.js";
+  const validatedArgs = GitHubValidator.validateGitHubRequest(args);
+  
+  // Step 3: Remove old structure after verification
+  rm src/validate.ts                     # Remove old centralized file
+  ```
+
+- **Maintain backward compatibility during transition**
+  ```typescript
+  // Good: Keep old interface while implementing new structure
+  export function validateGitHubRequest(args: any): IGitHubRequest {
+    return GitHubValidator.validateGitHubRequest(args); // Delegate to new validator
+  }
+  
+  // Then gradually migrate consumers and remove wrapper
+  ```
+
+- **Verify each step with compilation**
+  ```typescript
+  // Good: Compile after each major change
+  npm run build  // Must pass after each refactoring step
+  
+  // Fix any issues immediately before proceeding
+  ```
+
+- **Remove unnecessary files and directories**
+  ```typescript
+  // Good: Clean up after successful migration
+  rm src/validate.ts                     # Remove old validation file
+  rm src/validation/index.ts             # Remove unnecessary index files
+  rmdir src/validation                   # Remove empty directories (if applicable)
+  ```
+
+#### ✅ Refactoring Decision Criteria
+1. **Cohesion**: Keep related code together (validators with their services)
+2. **Coupling**: Reduce dependencies between unrelated modules
+3. **Clarity**: Make the code structure more intuitive and discoverable
+4. **Maintainability**: Easier to modify and extend individual services
+5. **Performance**: Enable better tree-shaking and bundle optimization
+
+#### ❌ What to Avoid
+- **Big-bang refactoring**: Changing everything at once without verification
+- **Breaking changes without migration path**: Removing old interfaces before consumers are updated
+- **Leaving dead code**: Keeping old files after successful migration
+- **Inconsistent patterns**: Applying new patterns to some services but not others

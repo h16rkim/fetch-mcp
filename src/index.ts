@@ -6,14 +6,10 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import {
-  validateRequestPayload,
-  validateConfluenceRequest,
-  validateJiraRequest,
-  validateSlackRequest,
-  validateGitHubRequest,
-  validateGitHubIssueRequest,
-} from "./validate.js";
+import { GeneralValidator } from "./GeneralValidator.js";
+import { AtlassianValidator } from "./atlassian/AtlassianValidator.js";
+import { SlackValidator } from "./slack/SlackValidator.js";
+import { GitHubValidator } from "./github/GitHubValidator.js";
 import { Fetcher } from "./Fetcher.js";
 import { AtlassianFetcher } from "./atlassian/AtlassianFetcher.js";
 import { SlackFetcher } from "./slack/SlackFetcher.js";
@@ -163,14 +159,14 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
   const { name, arguments: args } = request.params;
 
   if (request.params.name === Constants.FETCH) {
-    const validatedArgs = validateRequestPayload(args);
+    const validatedArgs = GeneralValidator.validateRequestPayload(args);
     const fetchResult = await Fetcher.doFetch(validatedArgs);
 
     return fetchResult.toJson();
   }
 
   if (request.params.name === Constants.FETCH_CONFLUENCE_PAGE) {
-    const validatedArgs = validateConfluenceRequest(args);
+    const validatedArgs = AtlassianValidator.validateConfluenceRequest(args);
     const confluenceResult =
       await AtlassianFetcher.fetchConfluencePage(validatedArgs);
 
@@ -178,28 +174,28 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
   }
 
   if (request.params.name === Constants.FETCH_JIRA_ISSUE) {
-    const validatedArgs = validateJiraRequest(args);
+    const validatedArgs = AtlassianValidator.validateJiraRequest(args);
     const jiraResult = await AtlassianFetcher.fetchJiraTicket(validatedArgs);
 
     return jiraResult.toJson();
   }
 
   if (request.params.name === Constants.FETCH_SLACK_MESSAGE) {
-    const validatedArgs = validateSlackRequest(args);
+    const validatedArgs = SlackValidator.validateSlackRequest(args);
     const slackResult = await SlackFetcher.fetchSlackMessage(validatedArgs);
 
     return slackResult.toJson();
   }
 
   if (request.params.name === Constants.FETCH_GITHUB_PULL_REQUEST) {
-    const validatedArgs = validateGitHubRequest(args);
+    const validatedArgs = GitHubValidator.validateGitHubRequest(args);
     const githubResult = await GitHubFetcher.fetchGitHubPullRequest(validatedArgs);
 
     return githubResult.toJson();
   }
 
   if (request.params.name === Constants.FETCH_GITHUB_ISSUE) {
-    const validatedArgs = validateGitHubIssueRequest(args);
+    const validatedArgs = GitHubValidator.validateGitHubIssueRequest(args);
     const githubIssueResult = await GitHubFetcher.fetchGitHubIssue(validatedArgs);
 
     return githubIssueResult.toJson();
