@@ -8,6 +8,7 @@ import {
   IGitHubComment,
   IGitHubReview,
   IGitHubReviewComment,
+  IGitHubReviewCommentOnReview,
   IGitHubIssue,
   IGitHubIssueComment,
 } from "./GitHubTypes.js";
@@ -18,6 +19,7 @@ import { GitHubPullRequest } from "./model/GitHubPullRequest.js";
 import { GitHubFile } from "./model/GitHubFile.js";
 import { GitHubComment } from "./model/GitHubComment.js";
 import { GitHubReview } from "./model/GitHubReview.js";
+import { GitHubReviewCommentOnReview } from "./model/GitHubReviewCommentOnReview.js";
 import { GitHubReviewComment } from "./model/GitHubReviewComment.js";
 import { GitHubIssue } from "./model/GitHubIssue.js";
 import { GitHubIssueComment } from "./model/GitHubIssueComment.js";
@@ -202,6 +204,7 @@ export class GitHubFetcher {
     pullNumber: number
   ): Promise<GitHubReview[]> {
     try {
+      // 1. 리뷰 목록 조회
       const url = `${this.API_BASE_URL}/repos/${owner}/${repo}/pulls/${pullNumber}/reviews`;
       const response = await this.makeGitHubApiRequest(url, accessToken);
 
@@ -209,8 +212,25 @@ export class GitHubFetcher {
         throw new Error(`Failed to fetch reviews: ${response.status} ${response.statusText}`);
       }
 
-      const data: IGitHubReview[] = await response.json();
-      return data.map(review => new GitHubReview(review));
+      const reviewsData: IGitHubReview[] = await response.json();
+
+      // 2. 리뷰 ID 배열 정리
+      const reviewIds = reviewsData.map(review => review.id);
+
+      // 3. Promise.all을 사용하여 각 리뷰의 댓글들 병렬 조회
+      const reviewCommentsPromises = reviewIds.map(reviewId =>
+        this.getReviewComments(accessToken, owner, repo, pullNumber, reviewId)
+      );
+
+      const allReviewComments = await Promise.all(reviewCommentsPromises);
+
+      // 4. 리뷰와 댓글을 매핑하여 GitHubReview 객체 생성
+      const reviews = reviewsData.map((reviewData, index) => {
+        const reviewComments = allReviewComments[index];
+        return new GitHubReview(reviewData, reviewComments);
+      });
+
+      return reviews;
     } catch (error) {
       throw new Error(`Failed to fetch Pull Request reviews: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -237,6 +257,31 @@ export class GitHubFetcher {
       return data.map(comment => new GitHubReviewComment(comment));
     } catch (error) {
       throw new Error(`Failed to fetch Pull Request review comments: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Get comments for a specific review
+   */
+  private static async getReviewComments(
+    accessToken: string,
+    owner: string,
+    repo: string,
+    pullNumber: number,
+    reviewId: number
+  ): Promise<GitHubReviewCommentOnReview[]> {
+    try {
+      const url = `${this.API_BASE_URL}/repos/${owner}/${repo}/pulls/${pullNumber}/reviews/${reviewId}/comments`;
+      const response = await this.makeGitHubApiRequest(url, accessToken);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch review ${reviewId} comments: ${response.status} ${response.statusText}`);
+      }
+
+      const data: IGitHubReviewCommentOnReview[] = await response.json();
+      return data.map(comment => new GitHubReviewCommentOnReview(comment));
+    } catch (error) {
+      throw new Error(`Failed to fetch review ${reviewId} comments: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 

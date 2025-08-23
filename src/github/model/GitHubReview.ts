@@ -1,12 +1,15 @@
 import { IGitHubReview } from "../GitHubTypes.js";
 import { GitHubUser } from "./GitHubUser.js";
+import { GitHubReviewCommentOnReview } from "./GitHubReviewCommentOnReview.js";
 
 export class GitHubReview {
   private _data: IGitHubReview;
   private _user?: GitHubUser;
+  private _comments: GitHubReviewCommentOnReview[];
 
-  constructor(data: IGitHubReview) {
+  constructor(data: IGitHubReview, comments: GitHubReviewCommentOnReview[] = []) {
     this._data = data;
+    this._comments = comments;
   }
 
   get data(): IGitHubReview {
@@ -90,6 +93,24 @@ export class GitHubReview {
     }
   }
 
+  get comments(): GitHubReviewCommentOnReview[] {
+    return this._comments;
+  }
+
+  get hasComments(): boolean {
+    return this._comments.length > 0;
+  }
+
+  get commentCount(): number {
+    return this._comments.length;
+  }
+
+  get sortedCommentsByCreatedAt(): GitHubReviewCommentOnReview[] {
+    return [...this._comments].sort((a, b) => 
+      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+  }
+
   get displayInfo(): string {
     const parts = [
       `${this.stateIcon} ${this.stateText}`,
@@ -104,6 +125,14 @@ export class GitHubReview {
     
     if (this.body) {
       result += `\n${this.body}`;
+    }
+
+    // 댓글이 있으면 댓글 정보도 포함
+    if (this.hasComments) {
+      result += `\n\n**Review Comments (${this.commentCount}):**`;
+      this.sortedCommentsByCreatedAt.forEach((comment, index) => {
+        result += `\n${index + 1}. ${comment.displayInfo}`;
+      });
     }
     
     return result;

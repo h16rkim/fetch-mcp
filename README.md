@@ -41,10 +41,10 @@ src/
 │       ├── GitHubFile.ts
 │       ├── GitHubComment.ts
 │       ├── GitHubReview.ts
-│       ├── GitHubCommit.ts
+│       ├── GitHubReviewComment.ts
+│       ├── GitHubReviewCommentOnReview.ts
 │       ├── GitHubPullRequest.ts
 │       ├── GitHubPullRequestModel.ts
-│       ├── GitHubReviewCommentsResponse.ts
 │       ├── GitHubIssue.ts
 │       ├── GitHubIssueComment.ts
 │       └── GitHubIssueModel.ts

@@ -202,6 +202,18 @@ export interface IGitHubReview {
   author_association: string;
 }
 
+// Review에 달린 댓글들 (Review Comments와는 다름)
+export interface IGitHubReviewCommentOnReview {
+  id: number;
+  user: IGitHubUser;
+  created_at: string;
+  updated_at: string;
+  body: string;
+  html_url: string;
+  pull_request_review_id: number;
+  author_association: string;
+}
+
 // GitHub Issue Types
 export interface IGitHubIssue {
   id: number;
