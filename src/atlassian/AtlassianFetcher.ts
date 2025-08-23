@@ -1,10 +1,10 @@
 import { JSDOM } from "jsdom";
 import {
-  ConfluenceRequest,
-  JiraRequest,
   IConfluenceApiResponse,
   IJiraApiResponse,
 } from "./AtlassianTypes.js";
+import { ConfluenceRequest } from "./ConfluenceRequest.js";
+import { JiraRequest } from "./JiraRequest.js";
 import { Constants } from "../constants.js";
 import { ConfluencePage } from "./model/ConfluencePage.js";
 import { JiraTicket } from "./model/JiraTicket.js";

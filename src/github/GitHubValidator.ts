@@ -1,4 +1,5 @@
 import { IGitHubRequest, IGitHubIssueRequest } from "./GitHubTypes.js";
+import { GitHubRequest } from "./GitHubRequest.js";
 import { BaseValidator } from "../validation/BaseValidator.js";
 
 /**
@@ -12,29 +13,33 @@ export class GitHubValidator extends BaseValidator {
   /**
    * Validate GitHub Pull Request request
    */
-  static validateGitHubRequest(args: any): IGitHubRequest {
+  static validateGitHubRequest(args: any): GitHubRequest {
     this.validateObject(args);
 
     const url = this.validateRequiredString(args.url, "url");
     this.validateGitHubPullRequestUrl(url);
 
-    return {
+    const requestData: IGitHubRequest = {
       url,
     };
+
+    return new GitHubRequest(requestData);
   }
 
   /**
    * Validate GitHub Issue request
    */
-  static validateGitHubIssueRequest(args: any): IGitHubIssueRequest {
+  static validateGitHubIssueRequest(args: any): GitHubRequest {
     this.validateObject(args);
 
     const url = this.validateRequiredString(args.url, "url");
     this.validateGitHubIssueUrl(url);
 
-    return {
+    const requestData: IGitHubRequest = {
       url,
     };
+
+    return new GitHubRequest(requestData);
   }
 
   /**

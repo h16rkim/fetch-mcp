@@ -1,6 +1,6 @@
 import { JSDOM } from "jsdom";
 import is_ip_private from "private-ip";
-import { IRequestPayload } from "./types.js";
+import { RequestPayload } from "./RequestPayload.js";
 import { Constants } from "./constants.js";
 import { McpResult } from "./McpModels.js";
 
@@ -28,7 +28,7 @@ export class Fetcher {
    * Validate URL and perform HTTP request
    */
   private static async performHttpRequest(
-    requestPayload: IRequestPayload
+    requestPayload: RequestPayload
   ): Promise<Response> {
     const { url, headers } = requestPayload;
 
@@ -62,7 +62,7 @@ export class Fetcher {
    * Process response as plain text (HTML with scripts/styles removed)
    */
   private static async processAsText(
-    requestPayload: IRequestPayload,
+    requestPayload: RequestPayload,
     response: Response
   ): Promise<McpResult> {
     const htmlContent = await response.text();
@@ -78,8 +78,8 @@ export class Fetcher {
 
     const processedText = this.applyLengthLimits(
       normalizedText,
-      requestPayload.max_length ?? this.DEFAULT_MAX_LENGTH,
-      requestPayload.start_index ?? this.DEFAULT_START_INDEX
+      requestPayload.getEffectiveMaxLength(this.DEFAULT_MAX_LENGTH),
+      requestPayload.getEffectiveStartIndex(this.DEFAULT_START_INDEX)
     );
 
     return McpResult.success(processedText);
@@ -89,7 +89,7 @@ export class Fetcher {
    * Process response as JSON
    */
   private static async processAsJson(
-    requestPayload: IRequestPayload,
+    requestPayload: RequestPayload,
     response: Response
   ): Promise<McpResult> {
     const jsonData = await response.json();
@@ -97,8 +97,8 @@ export class Fetcher {
 
     const processedJson = this.applyLengthLimits(
       jsonString,
-      requestPayload.max_length ?? this.DEFAULT_MAX_LENGTH,
-      requestPayload.start_index ?? this.DEFAULT_START_INDEX
+      requestPayload.getEffectiveMaxLength(this.DEFAULT_MAX_LENGTH),
+      requestPayload.getEffectiveStartIndex(this.DEFAULT_START_INDEX)
     );
 
     return McpResult.success(processedJson);
@@ -108,15 +108,15 @@ export class Fetcher {
    * Process response as raw HTML
    */
   private static async processAsHtml(
-    requestPayload: IRequestPayload,
+    requestPayload: RequestPayload,
     response: Response
   ): Promise<McpResult> {
     const htmlContent = await response.text();
 
     const processedHtml = this.applyLengthLimits(
       htmlContent,
-      requestPayload.max_length ?? this.DEFAULT_MAX_LENGTH,
-      requestPayload.start_index ?? this.DEFAULT_START_INDEX
+      requestPayload.getEffectiveMaxLength(this.DEFAULT_MAX_LENGTH),
+      requestPayload.getEffectiveStartIndex(this.DEFAULT_START_INDEX)
     );
 
     return McpResult.success(processedHtml);
@@ -138,10 +138,10 @@ export class Fetcher {
    */
   private static async tryProcessFormat(
     processor: (
-      payload: IRequestPayload,
+      payload: RequestPayload,
       response: Response
     ) => Promise<McpResult>,
-    requestPayload: IRequestPayload,
+    requestPayload: RequestPayload,
     response: Response
   ): Promise<McpResult | null> {
     try {
@@ -162,7 +162,7 @@ export class Fetcher {
    * Main fetch method that automatically detects the best format
    * Priority: Text -> JSON -> HTML (fallback)
    */
-  static async doFetch(requestPayload: IRequestPayload): Promise<McpResult> {
+  static async doFetch(requestPayload: RequestPayload): Promise<McpResult> {
     try {
       const response = await this.performHttpRequest(requestPayload);
 

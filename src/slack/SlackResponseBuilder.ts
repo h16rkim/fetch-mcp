@@ -1,7 +1,7 @@
 import { ResponseBuilder } from "../ResponseBuilder.js";
 import { SlackMessageModel } from "./model/SlackMessageModel.js";
 import { SlackUser } from "./model/SlackUser.js";
-import { ISlackRequest } from "./SlackTypes.js";
+import { SlackRequest } from "./SlackRequest.js";
 
 /**
  * Slack service specific response builder
@@ -26,7 +26,7 @@ export class SlackResponseBuilder {
    */
   async generateSlackMessageSummary(
     messageModel: SlackMessageModel,
-    request: ISlackRequest,
+    request: SlackRequest,
     accessToken: string,
     getUserInfo: (token: string, userId: string) => Promise<SlackUser | undefined>,
     maxLength: number

@@ -2,15 +2,15 @@
  * Atlassian API Types and Interfaces
  */
 
-export type ConfluenceRequest = {
+export interface IConfluenceRequest {
   url: string;
   maxLength?: number;
-};
+}
 
-export type JiraRequest = {
+export interface IJiraRequest {
   url: string;
   maxLength?: number;
-};
+}
 
 export interface IConfluenceApiResponse {
   title?: string;

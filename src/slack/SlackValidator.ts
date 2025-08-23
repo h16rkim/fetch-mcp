@@ -1,4 +1,5 @@
 import { ISlackRequest } from "./SlackTypes.js";
+import { SlackRequest } from "./SlackRequest.js";
 import { Constants } from "../constants.js";
 import { BaseValidator } from "../validation/BaseValidator.js";
 
@@ -13,19 +14,21 @@ export class SlackValidator extends BaseValidator {
   /**
    * Validate Slack message request
    */
-  static validateSlackRequest(args: any): ISlackRequest {
+  static validateSlackRequest(args: any): SlackRequest {
     this.validateObject(args);
 
     const url = this.validateRequiredString(args.url, "url");
     this.validateSlackMessageUrl(url);
 
-    return {
+    const requestData: ISlackRequest = {
       url,
       maxLength: this.withDefault(
         this.validateOptionalPositiveNumber(args.maxLength, "maxLength"),
         Constants.DEFAULT_MAX_LENGTH
       ),
     };
+
+    return new SlackRequest(requestData);
   }
 
   /**

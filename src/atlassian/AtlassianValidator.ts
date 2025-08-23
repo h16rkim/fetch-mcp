@@ -1,4 +1,6 @@
-import { ConfluenceRequest, JiraRequest } from "./AtlassianTypes.js";
+import { IConfluenceRequest, IJiraRequest } from "./AtlassianTypes.js";
+import { ConfluenceRequest } from "./ConfluenceRequest.js";
+import { JiraRequest } from "./JiraRequest.js";
 import { Constants } from "../constants.js";
 import { BaseValidator } from "../validation/BaseValidator.js";
 
@@ -18,13 +20,15 @@ export class AtlassianValidator extends BaseValidator {
     const url = this.validateRequiredString(args.url, "url");
     this.validateConfluenceUrl(url);
 
-    return {
+    const requestData: IConfluenceRequest = {
       url,
       maxLength: this.withDefault(
         this.validateOptionalPositiveNumber(args.maxLength, "maxLength"),
         Constants.DEFAULT_MAX_LENGTH
       ),
     };
+
+    return new ConfluenceRequest(requestData);
   }
 
   /**
@@ -36,13 +40,15 @@ export class AtlassianValidator extends BaseValidator {
     const url = this.validateRequiredString(args.url, "url");
     this.validateJiraUrl(url);
 
-    return {
+    const requestData: IJiraRequest = {
       url,
       maxLength: this.withDefault(
         this.validateOptionalPositiveNumber(args.maxLength, "maxLength"),
         Constants.DEFAULT_MAX_LENGTH
       ),
     };
+
+    return new JiraRequest(requestData);
   }
 
   /**

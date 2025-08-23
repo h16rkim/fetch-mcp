@@ -1,4 +1,5 @@
 import { IRequestPayload } from "./types.js";
+import { RequestPayload } from "./RequestPayload.js";
 import { Constants } from "./constants.js";
 import { BaseValidator } from "./validation/BaseValidator.js";
 
@@ -9,13 +10,13 @@ export class GeneralValidator extends BaseValidator {
   /**
    * Validate general request payload for fetch tool
    */
-  static validateRequestPayload(args: any): IRequestPayload {
+  static validateRequestPayload(args: any): RequestPayload {
     this.validateObject(args);
 
     const url = this.validateRequiredString(args.url, "url");
     this.validateUrl(url);
 
-    return {
+    const requestData: IRequestPayload = {
       url,
       headers: this.validateOptionalObject(args.headers, "headers"),
       max_length: this.withDefault(
@@ -27,5 +28,7 @@ export class GeneralValidator extends BaseValidator {
         Constants.DEFAULT_START_INDEX
       ),
     };
+
+    return new RequestPayload(requestData);
   }
 }

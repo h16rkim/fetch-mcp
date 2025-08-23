@@ -1,8 +1,6 @@
 import {
-  IGitHubRequest,
   IGitHubPullRequestUrl,
   IGitHubIssueUrl,
-  IGitHubIssueRequest,
   IGitHubPullRequest,
   IGitHubFile,
   IGitHubComment,
@@ -13,6 +11,7 @@ import {
   IGitHubIssueComment,
 } from "./GitHubTypes.js";
 import { Constants } from "../constants.js";
+import { GitHubRequest } from "./GitHubRequest.js";
 import { GitHubPullRequestModel } from "./model/GitHubPullRequestModel.js";
 import { GitHubIssueModel } from "./model/GitHubIssueModel.js";
 import { GitHubPullRequest } from "./model/GitHubPullRequest.js";
@@ -343,7 +342,7 @@ export class GitHubFetcher {
    * Fetch GitHub Pull Request information
    */
   public static async fetchGitHubPullRequest(
-    request: IGitHubRequest
+    request: GitHubRequest
   ): Promise<McpResult> {
     try {
       const accessToken = this.getAccessToken();
@@ -409,7 +408,7 @@ export class GitHubFetcher {
    * Fetch GitHub Issue information
    */
   public static async fetchGitHubIssue(
-    request: IGitHubIssueRequest
+    request: GitHubRequest
   ): Promise<McpResult> {
     try {
       const accessToken = this.getAccessToken();

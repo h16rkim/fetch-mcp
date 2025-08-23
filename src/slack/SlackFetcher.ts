@@ -1,11 +1,11 @@
 import {
-  ISlackRequest,
   ISlackConversationsHistoryResponse,
   ISlackConversationsRepliesResponse,
   ISlackUsersInfoResponse,
   ISlackMessage,
   ISlackUser,
 } from "./SlackTypes.js";
+import { SlackRequest } from "./SlackRequest.js";
 import { Constants } from "../constants.js";
 import { ResponseBuilder } from "../ResponseBuilder.js";
 import { SlackResponseBuilder } from "./SlackResponseBuilder.js";
@@ -265,7 +265,7 @@ export class SlackFetcher {
   /**
    * Fetch Slack message information
    */
-  static async fetchSlackMessage(request: ISlackRequest): Promise<McpResult> {
+  static async fetchSlackMessage(request: SlackRequest): Promise<McpResult> {
     try {
       const accessToken = this.getAccessToken();
       const { channel, timestamp, threadTs, isReply } = this.parseSlackUrl(
@@ -303,7 +303,7 @@ export class SlackFetcher {
     channel: string,
     threadTs: string,
     timestamp: string,
-    request: ISlackRequest
+    request: SlackRequest
   ): Promise<McpResult> {
     const replyMessage = await this.getSpecificReply(
       accessToken,
@@ -337,7 +337,7 @@ export class SlackFetcher {
     accessToken: string,
     channel: string,
     timestamp: string,
-    request: ISlackRequest
+    request: SlackRequest
   ): Promise<McpResult> {
     const response = await fetch(
       `https://slack.com/api/conversations.history?channel=${channel}&latest=${timestamp}&limit=1&inclusive=true`,
@@ -404,7 +404,7 @@ export class SlackFetcher {
    */
   private static async buildSlackResponse(
     messageModel: SlackMessageModel,
-    request: ISlackRequest,
+    request: SlackRequest,
     accessToken: string
   ): Promise<McpResult> {
     const responseBuilder = new SlackResponseBuilder();
