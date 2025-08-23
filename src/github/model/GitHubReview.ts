@@ -3,64 +3,86 @@ import { GitHubUser } from "./GitHubUser.js";
 import { GitHubReviewCommentOnReview } from "./GitHubReviewCommentOnReview.js";
 
 export class GitHubReview {
-  private _data: IGitHubReview;
-  private _user?: GitHubUser;
+  private _id: number;
+  private _user: GitHubUser;
+  private _body?: string;
+  private _state: "APPROVED" | "CHANGES_REQUESTED" | "COMMENTED" | "DISMISSED" | "PENDING";
+  private _htmlUrl: string;
+  private _pullRequestUrl: string;
+  private _commitId: string;
+  private _submittedAt?: string;
+  private _authorAssociation: string;
   private _comments: GitHubReviewCommentOnReview[];
 
   constructor(data: IGitHubReview, comments: GitHubReviewCommentOnReview[] = []) {
-    this._data = data;
+    this._id = data.id;
+    this._user = new GitHubUser(data.user);
+    this._body = data.body;
+    this._state = data.state;
+    this._htmlUrl = data.html_url;
+    this._pullRequestUrl = data.pull_request_url;
+    this._commitId = data.commit_id;
+    this._submittedAt = data.submitted_at;
+    this._authorAssociation = data.author_association;
     this._comments = comments;
   }
 
   get data(): IGitHubReview {
-    return this._data;
+    return {
+      id: this._id,
+      user: this._user.data,
+      body: this._body,
+      state: this._state,
+      html_url: this._htmlUrl,
+      pull_request_url: this._pullRequestUrl,
+      commit_id: this._commitId,
+      submitted_at: this._submittedAt,
+      author_association: this._authorAssociation
+    };
   }
 
   get id(): number {
-    return this._data.id;
+    return this._id;
   }
 
   get user(): GitHubUser {
-    if (!this._user) {
-      this._user = new GitHubUser(this._data.user);
-    }
     return this._user;
   }
 
   get body(): string | undefined {
-    return this._data.body;
+    return this._body;
   }
 
   get state(): string {
-    return this._data.state;
+    return this._state;
   }
 
   get htmlUrl(): string {
-    return this._data.html_url;
+    return this._htmlUrl;
   }
 
   get pullRequestUrl(): string {
-    return this._data.pull_request_url;
+    return this._pullRequestUrl;
   }
 
   get commitId(): string {
-    return this._data.commit_id;
+    return this._commitId;
   }
 
   get submittedAt(): string | undefined {
-    return this._data.submitted_at;
+    return this._submittedAt;
   }
 
   get authorAssociation(): string {
-    return this._data.author_association;
+    return this._authorAssociation;
   }
 
   get formattedSubmittedAt(): string | undefined {
-    return this._data.submitted_at ? new Date(this._data.submitted_at).toISOString() : undefined;
+    return this._submittedAt ? new Date(this._submittedAt).toISOString() : undefined;
   }
 
   get stateIcon(): string {
-    switch (this.state) {
+    switch (this._state) {
       case "APPROVED":
         return "✅";
       case "CHANGES_REQUESTED":
@@ -77,7 +99,7 @@ export class GitHubReview {
   }
 
   get stateText(): string {
-    switch (this.state) {
+    switch (this._state) {
       case "APPROVED":
         return "Approved";
       case "CHANGES_REQUESTED":
@@ -89,7 +111,7 @@ export class GitHubReview {
       case "PENDING":
         return "Pending";
       default:
-        return this.state;
+        return this._state;
     }
   }
 
@@ -114,7 +136,7 @@ export class GitHubReview {
   get displayInfo(): string {
     const parts = [
       `${this.stateIcon} ${this.stateText}`,
-      `by ${this.user.displayInfo}`
+      `by ${this._user.displayInfo}`
     ];
     
     if (this.formattedSubmittedAt) {
@@ -123,8 +145,8 @@ export class GitHubReview {
     
     let result = parts.join(" ");
     
-    if (this.body) {
-      result += `\n${this.body}`;
+    if (this._body) {
+      result += `\n${this._body}`;
     }
 
     // 댓글이 있으면 댓글 정보도 포함

@@ -2,128 +2,186 @@ import { IGitHubReviewComment } from "../GitHubTypes.js";
 import { GitHubUser } from "./GitHubUser.js";
 
 export class GitHubReviewComment {
-  private _data: IGitHubReviewComment;
-  private _user?: GitHubUser;
+  private _id: number;
+  private _user: GitHubUser;
+  private _createdAt: string;
+  private _updatedAt: string;
+  private _body: string;
+  private _htmlUrl: string;
+  private _pullRequestUrl: string;
+  private _diffHunk: string;
+  private _path: string;
+  private _position?: number;
+  private _originalPosition?: number;
+  private _commitId: string;
+  private _originalCommitId: string;
+  private _inReplyToId?: number;
+  private _authorAssociation: string;
+  private _line?: number;
+  private _originalLine?: number;
+  private _side: "LEFT" | "RIGHT";
+  private _startLine?: number;
+  private _originalStartLine?: number;
+  private _startSide?: "LEFT" | "RIGHT";
 
   constructor(data: IGitHubReviewComment) {
-    this._data = data;
+    this._id = data.id;
+    this._user = new GitHubUser(data.user);
+    this._createdAt = data.created_at;
+    this._updatedAt = data.updated_at;
+    this._body = data.body;
+    this._htmlUrl = data.html_url;
+    this._pullRequestUrl = data.pull_request_url;
+    this._diffHunk = data.diff_hunk;
+    this._path = data.path;
+    this._position = data.position;
+    this._originalPosition = data.original_position;
+    this._commitId = data.commit_id;
+    this._originalCommitId = data.original_commit_id;
+    this._inReplyToId = data.in_reply_to_id;
+    this._authorAssociation = data.author_association;
+    this._line = data.line;
+    this._originalLine = data.original_line;
+    this._side = data.side;
+    this._startLine = data.start_line;
+    this._originalStartLine = data.original_start_line;
+    this._startSide = data.start_side;
   }
 
   get data(): IGitHubReviewComment {
-    return this._data;
+    return {
+      id: this._id,
+      user: this._user.data,
+      created_at: this._createdAt,
+      updated_at: this._updatedAt,
+      body: this._body,
+      html_url: this._htmlUrl,
+      pull_request_url: this._pullRequestUrl,
+      diff_hunk: this._diffHunk,
+      path: this._path,
+      position: this._position,
+      original_position: this._originalPosition,
+      commit_id: this._commitId,
+      original_commit_id: this._originalCommitId,
+      in_reply_to_id: this._inReplyToId,
+      author_association: this._authorAssociation,
+      line: this._line,
+      original_line: this._originalLine,
+      side: this._side,
+      start_line: this._startLine,
+      original_start_line: this._originalStartLine,
+      start_side: this._startSide
+    };
   }
 
   get id(): number {
-    return this._data.id;
+    return this._id;
   }
 
   get user(): GitHubUser {
-    if (!this._user) {
-      this._user = new GitHubUser(this._data.user);
-    }
     return this._user;
   }
 
   get createdAt(): string {
-    return this._data.created_at;
+    return this._createdAt;
   }
 
   get updatedAt(): string {
-    return this._data.updated_at;
+    return this._updatedAt;
   }
 
   get body(): string {
-    return this._data.body;
+    return this._body;
   }
 
   get htmlUrl(): string {
-    return this._data.html_url;
+    return this._htmlUrl;
   }
 
   get pullRequestUrl(): string {
-    return this._data.pull_request_url;
+    return this._pullRequestUrl;
   }
 
   get diffHunk(): string {
-    return this._data.diff_hunk;
+    return this._diffHunk;
   }
 
   get path(): string {
-    return this._data.path;
+    return this._path;
   }
 
   get position(): number | undefined {
-    return this._data.position;
+    return this._position;
   }
 
   get originalPosition(): number | undefined {
-    return this._data.original_position;
+    return this._originalPosition;
   }
 
   get commitId(): string {
-    return this._data.commit_id;
+    return this._commitId;
   }
 
   get originalCommitId(): string {
-    return this._data.original_commit_id;
+    return this._originalCommitId;
   }
 
   get inReplyToId(): number | undefined {
-    return this._data.in_reply_to_id;
+    return this._inReplyToId;
   }
 
   get authorAssociation(): string {
-    return this._data.author_association;
+    return this._authorAssociation;
   }
 
   get line(): number | undefined {
-    return this._data.line;
+    return this._line;
   }
 
   get originalLine(): number | undefined {
-    return this._data.original_line;
+    return this._originalLine;
   }
 
   get side(): "LEFT" | "RIGHT" {
-    return this._data.side;
+    return this._side;
   }
 
   get startLine(): number | undefined {
-    return this._data.start_line;
+    return this._startLine;
   }
 
   get originalStartLine(): number | undefined {
-    return this._data.original_start_line;
+    return this._originalStartLine;
   }
 
   get startSide(): "LEFT" | "RIGHT" | undefined {
-    return this._data.start_side;
+    return this._startSide;
   }
 
   get formattedCreatedAt(): string {
-    return new Date(this._data.created_at).toISOString();
+    return new Date(this._createdAt).toISOString();
   }
 
   get formattedUpdatedAt(): string {
-    return new Date(this._data.updated_at).toISOString();
+    return new Date(this._updatedAt).toISOString();
   }
 
   get isEdited(): boolean {
-    return this._data.created_at !== this._data.updated_at;
+    return this._createdAt !== this._updatedAt;
   }
 
   get isReply(): boolean {
-    return Boolean(this._data.in_reply_to_id);
+    return Boolean(this._inReplyToId);
   }
 
   get shortCommitId(): string {
-    return this._data.commit_id.substring(0, 7);
+    return this._commitId.substring(0, 7);
   }
 
   get displayInfo(): string {
     const parts = [
-      `${this.user.displayInfo}`,
-      `on ${this.path}`,
+      `${this._user.displayInfo}`,
+      `on ${this._path}`,
       `(${this.shortCommitId})`,
       `at ${this.formattedCreatedAt}`
     ];
@@ -136,6 +194,6 @@ export class GitHubReviewComment {
       parts.push("(reply)");
     }
     
-    return `${parts.join(" ")}\n${this.body}`;
+    return `${parts.join(" ")}\n${this._body}`;
   }
 }

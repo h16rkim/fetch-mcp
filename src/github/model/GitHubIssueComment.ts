@@ -2,74 +2,93 @@ import { IGitHubIssueComment } from "../GitHubTypes.js";
 import { GitHubUser } from "./GitHubUser.js";
 
 export class GitHubIssueComment {
-  private _data: IGitHubIssueComment;
-  private _user?: GitHubUser;
+  private _id: number;
+  private _user: GitHubUser;
+  private _createdAt: string;
+  private _updatedAt: string;
+  private _body: string;
+  private _htmlUrl: string;
+  private _issueUrl: string;
+  private _authorAssociation: string;
 
   constructor(data: IGitHubIssueComment) {
-    this._data = data;
+    this._id = data.id;
+    this._user = new GitHubUser(data.user);
+    this._createdAt = data.created_at;
+    this._updatedAt = data.updated_at;
+    this._body = data.body;
+    this._htmlUrl = data.html_url;
+    this._issueUrl = data.issue_url;
+    this._authorAssociation = data.author_association;
   }
 
   get data(): IGitHubIssueComment {
-    return this._data;
+    return {
+      id: this._id,
+      user: this._user.data,
+      created_at: this._createdAt,
+      updated_at: this._updatedAt,
+      body: this._body,
+      html_url: this._htmlUrl,
+      issue_url: this._issueUrl,
+      author_association: this._authorAssociation
+    };
   }
 
   get id(): number {
-    return this._data.id;
+    return this._id;
   }
 
   get user(): GitHubUser {
-    if (!this._user) {
-      this._user = new GitHubUser(this._data.user);
-    }
     return this._user;
   }
 
   get createdAt(): string {
-    return this._data.created_at;
+    return this._createdAt;
   }
 
   get updatedAt(): string {
-    return this._data.updated_at;
+    return this._updatedAt;
   }
 
   get body(): string {
-    return this._data.body;
+    return this._body;
   }
 
   get htmlUrl(): string {
-    return this._data.html_url;
+    return this._htmlUrl;
   }
 
   get issueUrl(): string {
-    return this._data.issue_url;
+    return this._issueUrl;
   }
 
   get authorAssociation(): string {
-    return this._data.author_association;
+    return this._authorAssociation;
   }
 
   get formattedCreatedAt(): string {
-    return new Date(this._data.created_at).toISOString();
+    return new Date(this._createdAt).toISOString();
   }
 
   get formattedUpdatedAt(): string {
-    return new Date(this._data.updated_at).toISOString();
+    return new Date(this._updatedAt).toISOString();
   }
 
   get isEdited(): boolean {
-    return this._data.created_at !== this._data.updated_at;
+    return this._createdAt !== this._updatedAt;
   }
 
   get shortBody(): string {
     const maxLength = 100;
-    if (this.body.length <= maxLength) {
-      return this.body;
+    if (this._body.length <= maxLength) {
+      return this._body;
     }
-    return this.body.substring(0, maxLength) + "...";
+    return this._body.substring(0, maxLength) + "...";
   }
 
   get authorAssociationIcon(): string {
-    switch (this.authorAssociation) {
+    switch (this._authorAssociation) {
       case "OWNER":
         return "👑";
       case "MEMBER":
@@ -87,6 +106,6 @@ export class GitHubIssueComment {
     const editedText = this.isEdited ? " (edited)" : "";
     const associationIcon = this.authorAssociationIcon;
     
-    return `${associationIcon} ${this.user.displayInfo} - ${this.formattedCreatedAt}${editedText}\n${this.body}`;
+    return `${associationIcon} ${this._user.displayInfo} - ${this.formattedCreatedAt}${editedText}\n${this._body}`;
   }
 }

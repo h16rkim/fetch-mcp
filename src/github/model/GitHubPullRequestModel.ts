@@ -112,8 +112,8 @@ export class GitHubPullRequestModel {
     }
 
     // Reviewers
-    if (this._pullRequest.reviewerNames.length > 0) {
-      sections.push(`**Requested Reviewers**: ${this._pullRequest.reviewerNames.join(", ")}`);
+    if (this._pullRequest.requestedReviewerNames.length > 0) {
+      sections.push(`**Requested Reviewers**: ${this._pullRequest.requestedReviewerNames.join(", ")}`);
     }
 
     // Changes Summary
