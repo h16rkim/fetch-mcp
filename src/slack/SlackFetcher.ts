@@ -8,6 +8,7 @@ import {
 } from "./SlackTypes.js";
 import { Constants } from "../constants.js";
 import { ResponseBuilder } from "../ResponseBuilder.js";
+import { SlackResponseBuilder } from "./SlackResponseBuilder.js";
 import { SlackMessageModel } from "./model/SlackMessageModel.js";
 import { SlackUser } from "./model/SlackUser.js";
 import { SlackMessage } from "./model/SlackMessage.js";
@@ -406,123 +407,15 @@ export class SlackFetcher {
     request: ISlackRequest,
     accessToken: string
   ): Promise<McpResult> {
-    // Build the response using ResponseBuilder and SlackMessageModel
-    const builder = new ResponseBuilder()
-      .addTitle(`Slack ${messageModel.messageContext} Information:`)
-      .addField("Channel", messageModel.channelId)
-      .addField("Timestamp", messageModel.formattedTimestamp)
-      .addField("Author", messageModel.author)
-      .addField("Type", messageModel.messageType)
-      .addField("Thread", messageModel.threadInfo)
-      .addFieldIf(
-        messageModel.isMessageReply &&
-          Boolean(messageModel.originalThreadTimestamp),
-        "Original Thread Timestamp",
-        messageModel.originalThreadTimestamp || ""
-      )
-      .addField("URL", request.url)
-      .addSection("Message", messageModel.text);
-
-    // Add reactions if present
-    if (messageModel.hasReactions) {
-      builder.addRaw(`\nReactions:\n${messageModel.formattedReactions}`);
-    }
-
-    // Add attachments if present
-    if (messageModel.hasAttachments) {
-      const attachmentItems = messageModel
-        .getFormattedAttachments()
-        .map((attachment, index) => {
-          const attachmentBuilder = new ResponseBuilder();
-
-          if (attachment.title) {
-            attachmentBuilder.addField("Title", attachment.title);
-          }
-
-          if (attachment.text) {
-            attachmentBuilder.addField("Content", attachment.text);
-          }
-
-          if (attachment.pretext) {
-            attachmentBuilder.addField("Pretext", attachment.pretext);
-          }
-
-          if (attachment.imageUrl) {
-            attachmentBuilder.addField("Image", attachment.imageUrl);
-          }
-
-          if (attachment.thumbUrl) {
-            attachmentBuilder.addField("Thumbnail", attachment.thumbUrl);
-          }
-
-          if (attachment.fromUrl) {
-            attachmentBuilder.addField("URL", attachment.fromUrl);
-          }
-
-          if (attachment.serviceName) {
-            attachmentBuilder.addField("Service", attachment.serviceName);
-          }
-
-          if (attachment.authorName) {
-            attachmentBuilder.addField("Author", attachment.authorName);
-          }
-
-          if (attachment.fields && attachment.fields.length > 0) {
-            const fieldItems = attachment.fields.map(
-              field => `${field.title}: ${field.value}`
-            );
-            attachmentBuilder.addBulletList("Fields", fieldItems);
-          }
-
-          return `${index + 1}. ${attachmentBuilder.build()}`;
-        });
-
-      builder.addNumberedList("Attachments", attachmentItems);
-    }
-
-    // Add files if present
-    if (messageModel.hasFiles) {
-      const fileItems = messageModel.formattedFiles.map(file => {
-        let fileInfo = file.info;
-        if (file.url) fileInfo += `\n   URL: ${file.url}`;
-        return fileInfo;
-      });
-
-      builder.addNumberedList("Files", fileItems);
-    }
-
-    // Add replies if present
-    if (messageModel.hasReplies) {
-      // Get unique user IDs from replies
-      const uniqueUserIds = [
-        ...new Set(
-          messageModel.formattedReplies
-            .map(reply => reply.author)
-            .filter(userId => Boolean(userId))
-        ),
-      ];
-
-      // Fetch all user information in parallel using SlackUser
-      const userInfos = await Promise.all(
-        uniqueUserIds.map(async userId => {
-          const userInfo = await this.getSlackUserInfo(accessToken, userId);
-          return { userId, userInfo };
-        })
-      );
-
-      const replyItems = messageModel.formattedReplies.map(reply => {
-        const userInfoData = userInfos.find(
-          info => info.userId === reply.author
-        );
-        const userName =
-          userInfoData?.userInfo?.bestDisplayName ?? "Unknown User";
-        return `${userName} (${reply.timestamp}): ${reply.text}`;
-      });
-
-      builder.addBulletList("Replies", replyItems);
-    }
-
-    const result = builder.build(request.maxLength ?? this.DEFAULT_MAX_LENGTH);
+    const responseBuilder = new SlackResponseBuilder();
+    
+    const result = await responseBuilder.generateSlackMessageSummary(
+      messageModel,
+      request,
+      accessToken,
+      this.getSlackUserInfo.bind(this),
+      request.maxLength ?? this.DEFAULT_MAX_LENGTH
+    );
 
     return McpResult.success(result);
   }
