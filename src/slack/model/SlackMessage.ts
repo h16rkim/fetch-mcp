@@ -1,77 +1,130 @@
-import { ISlackMessage } from "../SlackTypes.js";
+import { ISlackMessage, ISlackReaction, ISlackAttachment, ISlackFile } from "../SlackTypes.js";
 import { SlackReaction } from "./SlackReaction.js";
 import { SlackAttachment } from "./SlackAttachment.js";
 import { SlackFile } from "./SlackFile.js";
 
 export class SlackMessage {
-  private _data: ISlackMessage;
+  private _type: string;
+  private _subtype?: string;
+  private _ts: string;
+  private _user?: string;
+  private _botId?: string;
+  private _username?: string;
+  private _text: string;
+  private _threadTs?: string;
+  private _replyCount?: number;
+  private _replyUsersCount?: number;
+  private _latestReply?: string;
+  private _reactions: SlackReaction[];
+  private _attachments: SlackAttachment[];
+  private _files: SlackFile[];
+  private _edited?: { user: string; ts: string };
+  private _isStarred?: boolean;
+  private _pinnedTo: string[];
+  private _permalink?: string;
 
   constructor(data: ISlackMessage) {
-    this._data = data;
+    this._type = data.type || "message";
+    this._subtype = data.subtype;
+    this._ts = data.ts;
+    this._user = data.user;
+    this._botId = data.bot_id;
+    this._username = data.username;
+    this._text = data.text || "No content";
+    this._threadTs = data.thread_ts;
+    this._replyCount = data.reply_count;
+    this._replyUsersCount = data.reply_users_count;
+    this._latestReply = data.latest_reply;
+    this._reactions = (data.reactions || []).map(reaction => new SlackReaction(reaction));
+    this._attachments = (data.attachments || []).map(attachment => new SlackAttachment(attachment));
+    this._files = (data.files || []).map(file => new SlackFile(file));
+    this._edited = data.edited;
+    this._isStarred = data.is_starred;
+    this._pinnedTo = data.pinned_to || [];
+    this._permalink = data.permalink;
   }
 
   get data(): ISlackMessage {
-    return this._data;
+    return {
+      type: this._type,
+      subtype: this._subtype,
+      ts: this._ts,
+      user: this._user,
+      bot_id: this._botId,
+      username: this._username,
+      text: this._text,
+      thread_ts: this._threadTs,
+      reply_count: this._replyCount,
+      reply_users_count: this._replyUsersCount,
+      latest_reply: this._latestReply,
+      reactions: this._reactions.map(reaction => reaction.data),
+      attachments: this._attachments.map(attachment => attachment.data),
+      files: this._files.map(file => file.data),
+      edited: this._edited,
+      is_starred: this._isStarred,
+      pinned_to: this._pinnedTo,
+      permalink: this._permalink
+    };
   }
 
   get type(): string {
-    return this._data.type || "message";
+    return this._type;
   }
 
   get subtype(): string | undefined {
-    return this._data.subtype;
+    return this._subtype;
   }
 
   get messageType(): string {
-    const subtype = this.subtype ? ` (${this.subtype})` : "";
-    return `${this.type}${subtype}`;
+    const subtype = this._subtype ? ` (${this._subtype})` : "";
+    return `${this._type}${subtype}`;
   }
 
   get timestamp(): string {
-    return this._data.ts;
+    return this._ts;
   }
 
   get formattedTimestamp(): string {
-    if (!this._data.ts) {
+    if (!this._ts) {
       return "Unknown time";
     }
-    return new Date(parseFloat(this._data.ts) * 1000).toISOString();
+    return new Date(parseFloat(this._ts) * 1000).toISOString();
   }
 
   get user(): string | undefined {
-    return this._data.user;
+    return this._user;
   }
 
   get botId(): string | undefined {
-    return this._data.bot_id;
+    return this._botId;
   }
 
   get username(): string | undefined {
-    return this._data.username;
+    return this._username;
   }
 
   get text(): string {
-    return this._data.text || "No content";
+    return this._text;
   }
 
   get threadTimestamp(): string | undefined {
-    return this._data.thread_ts;
+    return this._threadTs;
   }
 
   get isThreaded(): boolean {
-    return Boolean(this.threadTimestamp);
+    return Boolean(this._threadTs);
   }
 
   get replyCount(): number {
-    return this._data.reply_count || 0;
+    return this._replyCount || 0;
   }
 
   get replyUsersCount(): number {
-    return this._data.reply_users_count || 0;
+    return this._replyUsersCount || 0;
   }
 
   get latestReply(): string | undefined {
-    return this._data.latest_reply;
+    return this._latestReply;
   }
 
   get threadInfo(): string {
@@ -79,89 +132,78 @@ export class SlackMessage {
   }
 
   get reactions(): SlackReaction[] {
-    if (!this._data.reactions) {
-      return [];
-    }
-    return this._data.reactions.map(reaction => new SlackReaction(reaction));
+    return this._reactions;
   }
 
   get hasReactions(): boolean {
-    return this.reactions.length > 0;
+    return this._reactions.length > 0;
   }
 
   get formattedReactions(): string {
     if (!this.hasReactions) {
       return "";
     }
-    return this.reactions.map(reaction => reaction.formattedReaction).join(" ");
+    return this._reactions.map(reaction => reaction.formattedReaction).join(" ");
   }
 
   get attachments(): SlackAttachment[] {
-    if (!this._data.attachments) {
-      return [];
-    }
-    return this._data.attachments.map(
-      attachment => new SlackAttachment(attachment)
-    );
+    return this._attachments;
   }
 
   get hasAttachments(): boolean {
-    return this.attachments.length > 0;
+    return this._attachments.length > 0;
   }
 
   get files(): SlackFile[] {
-    if (!this._data.files) {
-      return [];
-    }
-    return this._data.files.map(file => new SlackFile(file));
+    return this._files;
   }
 
   get hasFiles(): boolean {
-    return this.files.length > 0;
+    return this._files.length > 0;
   }
 
   get formattedFiles(): Array<{ name: string; info: string; url?: string }> {
-    return this.files.map(file => file.getFileDetails());
+    return this._files.map(file => file.getFileDetails());
   }
 
   get edited(): { user: string; timestamp: string } | undefined {
-    if (!this._data.edited) {
+    if (!this._edited) {
       return undefined;
     }
     return {
-      user: this._data.edited.user,
+      user: this._edited.user,
       timestamp: new Date(
-        parseFloat(this._data.edited.ts) * 1000
+        parseFloat(this._edited.ts) * 1000
       ).toISOString(),
     };
   }
 
   get isEdited(): boolean {
-    return Boolean(this.edited);
+    return Boolean(this._edited);
   }
 
   get isStarred(): boolean {
-    return Boolean(this._data.is_starred);
+    return Boolean(this._isStarred);
   }
 
   get pinnedTo(): string[] {
-    return this._data.pinned_to || [];
+    return this._pinnedTo;
   }
 
   get isPinned(): boolean {
-    return this.pinnedTo.length > 0;
+    return this._pinnedTo.length > 0;
   }
 
   get permalink(): string | undefined {
-    return this._data.permalink;
+    return this._permalink;
   }
 
   get isBot(): boolean {
-    return Boolean(this.botId);
+    return Boolean(this._botId);
   }
 
   get isFromUser(): boolean {
-    return Boolean(this.user) && !this.isBot;
+    return Boolean(this._user) && !this.isBot;
   }
 
   /**
@@ -178,7 +220,7 @@ export class SlackMessage {
     authorName?: string;
     fields?: Array<{ title: string; value: string }>;
   }> {
-    return this.attachments.map(attachment => ({
+    return this._attachments.map(attachment => ({
       title: attachment.title,
       text: attachment.text,
       pretext: attachment.pretext,

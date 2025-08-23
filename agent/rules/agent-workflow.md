@@ -164,7 +164,7 @@ After successfully completing all verification steps and architecture compliance
 
 **Documentation Update Checklist:**
 
-1. **Update AGENTS.md with New Lessons**
+1. **Update lesson.md with New Lessons**
    - Review the work completed in this session
    - Identify new coding patterns, architectural decisions, or best practices discovered
    - Add new sections or update existing sections in the coding conventions (sections 1-13)

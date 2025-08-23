@@ -1,46 +1,65 @@
 import { ISlackUser } from "../SlackTypes.js";
 
 export class SlackUser {
-  private _data: ISlackUser;
+  private _id: string;
+  private _name?: string;
+  private _realName?: string;
+  private _displayName?: string;
+  private _profile?: {
+    display_name?: string;
+    real_name?: string;
+    first_name?: string;
+    last_name?: string;
+  };
 
   constructor(data: ISlackUser) {
-    this._data = data;
+    this._id = data.id;
+    this._name = data.name;
+    this._realName = data.real_name;
+    this._displayName = data.display_name;
+    this._profile = data.profile;
   }
 
   get data(): ISlackUser {
-    return this._data;
+    return {
+      id: this._id,
+      name: this._name,
+      real_name: this._realName,
+      display_name: this._displayName,
+      profile: this._profile
+    };
   }
 
   get id(): string {
-    return this._data.id;
+    return this._id;
   }
 
   get name(): string {
-    return this._data.name || "Unknown";
+    return this._name || "Unknown";
   }
 
   get realName(): string {
-    return this._data.real_name || "Unknown";
+    return this._realName || "Unknown";
   }
 
   get displayName(): string {
-    return this._data.display_name || "Unknown";
+    return this._displayName || "Unknown";
   }
 
   get profileDisplayName(): string {
-    return this._data.profile?.display_name || "Unknown";
+    return this._profile?.display_name || "Unknown";
   }
 
   get profileRealName(): string {
-    return this._data.profile?.real_name || "Unknown";
+    return this._profile?.real_name || "Unknown";
   }
 
   get profileFirstName(): string {
-    return this._data.profile?.first_name || "Unknown";
+    return this._profile?.first_name || "Unknown";
   }
 
   get profileLastName(): string {
-    return this._data.profile?.last_name || "Unknown";
+    return this._profile?.last_name || "Unknown";
   }
 
   /**
@@ -49,11 +68,11 @@ export class SlackUser {
    */
   get bestDisplayName(): string {
     return (
-      this._data.profile?.display_name ||
-      this._data.display_name ||
-      this._data.profile?.real_name ||
-      this._data.real_name ||
-      this._data.name ||
+      this._profile?.display_name ||
+      this._displayName ||
+      this._profile?.real_name ||
+      this._realName ||
+      this._name ||
       "Unknown User"
     );
   }
@@ -62,8 +81,8 @@ export class SlackUser {
    * Get full name if available (first + last name)
    */
   get fullName(): string {
-    const firstName = this._data.profile?.first_name;
-    const lastName = this._data.profile?.last_name;
+    const firstName = this._profile?.first_name;
+    const lastName = this._profile?.last_name;
 
     if (firstName && lastName) {
       return `${firstName} ${lastName}`;
@@ -80,7 +99,7 @@ export class SlackUser {
    * Check if user has profile information
    */
   get hasProfile(): boolean {
-    return Boolean(this._data.profile);
+    return Boolean(this._profile);
   }
 
   /**

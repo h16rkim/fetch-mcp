@@ -1,88 +1,123 @@
 import { ISlackFile } from "../SlackTypes.js";
 
 export class SlackFile {
-  private _data: ISlackFile;
+  private _id: string;
+  private _name?: string;
+  private _title?: string;
+  private _mimetype?: string;
+  private _filetype?: string;
+  private _prettyType?: string;
+  private _user?: string;
+  private _size?: number;
+  private _urlPrivate?: string;
+  private _urlPrivateDownload?: string;
+  private _permalink?: string;
+  private _permalinkPublic?: string;
 
   constructor(data: ISlackFile) {
-    this._data = data;
+    this._id = data.id;
+    this._name = data.name;
+    this._title = data.title;
+    this._mimetype = data.mimetype;
+    this._filetype = data.filetype;
+    this._prettyType = data.pretty_type;
+    this._user = data.user;
+    this._size = data.size;
+    this._urlPrivate = data.url_private;
+    this._urlPrivateDownload = data.url_private_download;
+    this._permalink = data.permalink;
+    this._permalinkPublic = data.permalink_public;
   }
 
   get data(): ISlackFile {
-    return this._data;
+    return {
+      id: this._id,
+      name: this._name,
+      title: this._title,
+      mimetype: this._mimetype,
+      filetype: this._filetype,
+      pretty_type: this._prettyType,
+      user: this._user,
+      size: this._size,
+      url_private: this._urlPrivate,
+      url_private_download: this._urlPrivateDownload,
+      permalink: this._permalink,
+      permalink_public: this._permalinkPublic
+    };
   }
 
   get id(): string {
-    return this._data.id;
+    return this._id;
   }
 
   get name(): string | undefined {
-    return this._data.name;
+    return this._name;
   }
 
   get title(): string | undefined {
-    return this._data.title;
+    return this._title;
   }
 
   get displayName(): string {
-    return this.name || this.title || "Unnamed file";
+    return this._name || this._title || "Unnamed file";
   }
 
   get mimetype(): string | undefined {
-    return this._data.mimetype;
+    return this._mimetype;
   }
 
   get filetype(): string | undefined {
-    return this._data.filetype;
+    return this._filetype;
   }
 
   get prettyType(): string | undefined {
-    return this._data.pretty_type;
+    return this._prettyType;
   }
 
   get user(): string | undefined {
-    return this._data.user;
+    return this._user;
   }
 
   get size(): number | undefined {
-    return this._data.size;
+    return this._size;
   }
 
   get sizeInKB(): number | undefined {
-    return this.size ? Math.round(this.size / 1024) : undefined;
+    return this._size ? Math.round(this._size / 1024) : undefined;
   }
 
   get urlPrivate(): string | undefined {
-    return this._data.url_private;
+    return this._urlPrivate;
   }
 
   get urlPrivateDownload(): string | undefined {
-    return this._data.url_private_download;
+    return this._urlPrivateDownload;
   }
 
   get permalink(): string | undefined {
-    return this._data.permalink;
+    return this._permalink;
   }
 
   get permalinkPublic(): string | undefined {
-    return this._data.permalink_public;
+    return this._permalinkPublic;
   }
 
   get hasSize(): boolean {
-    return Boolean(this.size);
+    return Boolean(this._size);
   }
 
   get hasMimetype(): boolean {
-    return Boolean(this.mimetype);
+    return Boolean(this._mimetype);
   }
 
   get hasPermalink(): boolean {
-    return Boolean(this.permalink);
+    return Boolean(this._permalink);
   }
 
   get formattedFileInfo(): string {
     let fileInfo = this.displayName;
-    if (this.mimetype) fileInfo += ` (${this.mimetype})`;
-    if (this.size) fileInfo += ` - ${this.sizeInKB}KB`;
+    if (this._mimetype) fileInfo += ` (${this._mimetype})`;
+    if (this._size) fileInfo += ` - ${this.sizeInKB}KB`;
     return fileInfo;
   }
 
@@ -94,7 +129,7 @@ export class SlackFile {
     return {
       name: this.displayName,
       info: this.formattedFileInfo,
-      url: this.permalink,
+      url: this._permalink,
     };
   }
 }

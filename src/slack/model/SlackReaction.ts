@@ -1,37 +1,45 @@
 import { ISlackReaction } from "../SlackTypes.js";
 
 export class SlackReaction {
-  private _data: ISlackReaction;
+  private _name: string;
+  private _count: number;
+  private _users: string[];
 
   constructor(data: ISlackReaction) {
-    this._data = data;
+    this._name = data.name || "unknown";
+    this._count = data.count || 0;
+    this._users = data.users || [];
   }
 
   get data(): ISlackReaction {
-    return this._data;
+    return {
+      name: this._name,
+      count: this._count,
+      users: this._users
+    };
   }
 
   get name(): string {
-    return this._data.name || "unknown";
+    return this._name;
   }
 
   get count(): number {
-    return this._data.count || 0;
+    return this._count;
   }
 
   get users(): string[] {
-    return this._data.users || [];
+    return this._users;
   }
 
   get userCount(): number {
-    return this.users.length;
+    return this._users.length;
   }
 
   get formattedReaction(): string {
-    return `${this.name}: ${this.count}`;
+    return `${this._name}: ${this._count}`;
   }
 
   get hasUsers(): boolean {
-    return this.users.length > 0;
+    return this._users.length > 0;
   }
 }
