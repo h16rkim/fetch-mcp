@@ -1,56 +1,65 @@
 import { IJiraApiResponse } from "../AtlassianTypes.js";
+import { JiraUser } from "./JiraUser.js";
+import { JiraStatus } from "./JiraStatus.js";
+import { JiraPriority } from "./JiraPriority.js";
+import { JiraIssueType } from "./JiraIssueType.js";
+import { JiraSubtask } from "./JiraSubtask.js";
+import { JiraComment } from "./JiraComment.js";
 
 export class JiraTicket {
   private _key: string;
-  private _fields?: {
-    summary?: string;
-    assignee?: {
-      displayName?: string;
-    };
-    status?: {
-      name?: string;
-    };
-    priority?: {
-      name?: string;
-    };
-    issuetype?: {
-      name?: string;
-    };
-    reporter?: {
-      displayName?: string;
-    };
-    created?: string;
-    updated?: string;
-    description?: any;
-    subtasks?: Array<{
-      key?: string;
-      fields?: {
-        summary?: string;
-        status?: {
-          name?: string;
-        };
-      };
-    }>;
-    comment?: {
-      comments?: Array<{
-        author?: {
-          displayName?: string;
-        };
-        body?: any;
-        created?: string;
-      }>;
-    };
-  };
+  private _summary: string;
+  private _assignee?: JiraUser;
+  private _status?: JiraStatus;
+  private _priority?: JiraPriority;
+  private _issueType?: JiraIssueType;
+  private _reporter?: JiraUser;
+  private _created: string;
+  private _updated: string;
+  private _description: any;
+  private _subtasks: JiraSubtask[];
+  private _comments: JiraComment[];
 
   constructor(data: IJiraApiResponse) {
     this._key = data.key || "Unknown key";
-    this._fields = data.fields;
+    this._summary = data.fields?.summary || "No summary";
+    this._assignee = data.fields?.assignee ? new JiraUser(data.fields.assignee) : undefined;
+    this._status = data.fields?.status ? new JiraStatus(data.fields.status) : undefined;
+    this._priority = data.fields?.priority ? new JiraPriority(data.fields.priority) : undefined;
+    this._issueType = data.fields?.issuetype ? new JiraIssueType(data.fields.issuetype) : undefined;
+    this._reporter = data.fields?.reporter ? new JiraUser(data.fields.reporter) : undefined;
+    this._created = data.fields?.created || "Unknown";
+    this._updated = data.fields?.updated || "Unknown";
+    this._description = data.fields?.description;
+    
+    // Initialize subtasks
+    this._subtasks = (data.fields?.subtasks || []).map(subtask => new JiraSubtask(subtask));
+    
+    // Initialize comments (latest 20)
+    const comments = data.fields?.comment?.comments || [];
+    this._comments = comments.slice(-20).map(comment => 
+      new JiraComment(comment, this.extractTextFromADF.bind(this))
+    );
   }
 
   get data(): IJiraApiResponse {
     return {
       key: this._key,
-      fields: this._fields
+      fields: {
+        summary: this._summary,
+        assignee: this._assignee?.data,
+        status: this._status?.data,
+        priority: this._priority?.data,
+        issuetype: this._issueType?.data,
+        reporter: this._reporter?.data,
+        created: this._created,
+        updated: this._updated,
+        description: this._description,
+        subtasks: this._subtasks.map(subtask => subtask.data),
+        comment: {
+          comments: this._comments.map(comment => comment.data)
+        }
+      }
     };
   }
 
@@ -59,92 +68,129 @@ export class JiraTicket {
   }
 
   get summary(): string {
-    return this._fields?.summary || "No summary";
+    return this._summary;
   }
 
   get assignee(): string {
-    return this._fields?.assignee?.displayName || "Unassigned";
+    return this._assignee?.displayName || "Unassigned";
+  }
+
+  get assigneeInfo(): JiraUser | undefined {
+    return this._assignee;
   }
 
   get status(): string {
-    return this._fields?.status?.name || "Unknown status";
+    return this._status?.name || "Unknown status";
+  }
+
+  get statusInfo(): JiraStatus | undefined {
+    return this._status;
   }
 
   get priority(): string {
-    return this._fields?.priority?.name || "Unknown priority";
+    return this._priority?.name || "Unknown priority";
+  }
+
+  get priorityInfo(): JiraPriority | undefined {
+    return this._priority;
   }
 
   get issueType(): string {
-    return this._fields?.issuetype?.name || "Unknown type";
+    return this._issueType?.name || "Unknown type";
+  }
+
+  get issueTypeInfo(): JiraIssueType | undefined {
+    return this._issueType;
   }
 
   get reporter(): string {
-    return this._fields?.reporter?.displayName || "Unknown reporter";
+    return this._reporter?.displayName || "Unknown reporter";
+  }
+
+  get reporterInfo(): JiraUser | undefined {
+    return this._reporter;
   }
 
   get created(): string {
-    return this._fields?.created || "Unknown";
+    return this._created;
   }
 
   get updated(): string {
-    return this._fields?.updated || "Unknown";
+    return this._updated;
   }
 
   get description(): string {
-    if (!this._fields?.description) {
+    if (!this._description) {
       return "No description";
     }
 
-    const desc = this._fields.description;
-    if (typeof desc === "string") {
-      return desc;
-    } else if (desc.content) {
-      return this.extractTextFromADF(desc);
+    if (typeof this._description === "string") {
+      return this._description;
+    } else if (this._description.content) {
+      return this.extractTextFromADF(this._description);
     }
 
     return "No description";
   }
 
-  get subtasks(): Array<{ key: string; summary: string; status: string }> {
-    if (
-      !this._fields?.subtasks ||
-      this._fields.subtasks.length === 0
-    ) {
-      return [];
-    }
+  get subtasks(): JiraSubtask[] {
+    return this._subtasks;
+  }
 
-    return this._fields.subtasks.map((subtask: any) => ({
-      key: subtask.key || "Unknown key",
-      summary: subtask.fields?.summary || "No summary",
-      status: subtask.fields?.status?.name || "Unknown status",
+  get subtaskSummaries(): Array<{ key: string; summary: string; status: string }> {
+    return this._subtasks.map(subtask => ({
+      key: subtask.key,
+      summary: subtask.summary,
+      status: subtask.statusName,
     }));
   }
 
-  get comments(): Array<{ author: string; body: string; created: string }> {
-    if (
-      !this._fields?.comment?.comments ||
-      this._fields.comment.comments.length === 0
-    ) {
-      return [];
-    }
+  get comments(): JiraComment[] {
+    return this._comments;
+  }
 
-    // Get latest 20 comments
-    return this._fields.comment.comments.slice(-20).map((comment: any) => ({
-      author: comment.author?.displayName || "Unknown author",
-      body:
-        typeof comment.body === "string"
-          ? comment.body
-          : this.extractTextFromADF(comment.body),
-      created: comment.created || "Unknown date",
+  get commentSummaries(): Array<{ author: string; body: string; created: string }> {
+    return this._comments.map(comment => ({
+      author: comment.authorName,
+      body: comment.body,
+      created: comment.created,
     }));
   }
 
   get hasSubtasks(): boolean {
-    return this.subtasks.length > 0;
+    return this._subtasks.length > 0;
   }
 
   get hasComments(): boolean {
-    return this.comments.length > 0;
+    return this._comments.length > 0;
+  }
+
+  get isAssigned(): boolean {
+    return this._assignee !== undefined && !this._assignee.isUnknown;
+  }
+
+  get isOpen(): boolean {
+    return this._status?.isOpen || false;
+  }
+
+  get isClosed(): boolean {
+    return this._status?.isClosed || false;
+  }
+
+  get isHighPriority(): boolean {
+    return this._priority?.isHigh || false;
+  }
+
+  get isBug(): boolean {
+    return this._issueType?.isBug || false;
+  }
+
+  get completedSubtasks(): JiraSubtask[] {
+    return this._subtasks.filter(subtask => subtask.isCompleted);
+  }
+
+  get inProgressSubtasks(): JiraSubtask[] {
+    return this._subtasks.filter(subtask => subtask.isInProgress);
   }
 
   /**

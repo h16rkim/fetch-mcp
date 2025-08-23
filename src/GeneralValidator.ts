@@ -1,4 +1,4 @@
-import { RequestPayload } from "./types.js";
+import { IRequestPayload } from "./types.js";
 import { Constants } from "./constants.js";
 import { BaseValidator } from "./validation/BaseValidator.js";
 
@@ -9,7 +9,7 @@ export class GeneralValidator extends BaseValidator {
   /**
    * Validate general request payload for fetch tool
    */
-  static validateRequestPayload(args: any): RequestPayload {
+  static validateRequestPayload(args: any): IRequestPayload {
     this.validateObject(args);
 
     const url = this.validateRequiredString(args.url, "url");

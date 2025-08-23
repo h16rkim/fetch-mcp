@@ -373,16 +373,17 @@ export class GitHubFetcher {
       const allComments = [...comments];
       reviewComments.forEach(reviewComment => {
         // Convert review comment to regular comment format for unified display
-        allComments.push({
+        const reviewCommentAsComment = new GitHubComment({
           id: reviewComment.id,
-          user: reviewComment.user,
-          createdAt: reviewComment.createdAt,
-          updatedAt: reviewComment.updatedAt,
+          user: reviewComment.user.data,
+          created_at: reviewComment.createdAt,
+          updated_at: reviewComment.updatedAt,
           body: `**Review Comment on ${reviewComment.path}:**\n${reviewComment.body}`,
-          htmlUrl: reviewComment.htmlUrl,
-          issueUrl: reviewComment.pullRequestUrl,
-          authorAssociation: reviewComment.authorAssociation,
-        } as any);
+          html_url: reviewComment.htmlUrl,
+          issue_url: reviewComment.pullRequestUrl,
+          author_association: reviewComment.authorAssociation,
+        });
+        allComments.push(reviewCommentAsComment);
       });
 
       // Create comprehensive PR model

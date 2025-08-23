@@ -1,6 +1,6 @@
 import { JSDOM } from "jsdom";
 import is_ip_private from "private-ip";
-import { RequestPayload } from "./types.js";
+import { IRequestPayload } from "./types.js";
 import { Constants } from "./constants.js";
 import { McpResult } from "./McpModels.js";
 
@@ -28,7 +28,7 @@ export class Fetcher {
    * Validate URL and perform HTTP request
    */
   private static async performHttpRequest(
-    requestPayload: RequestPayload
+    requestPayload: IRequestPayload
   ): Promise<Response> {
     const { url, headers } = requestPayload;
 
@@ -62,7 +62,7 @@ export class Fetcher {
    * Process response as plain text (HTML with scripts/styles removed)
    */
   private static async processAsText(
-    requestPayload: RequestPayload,
+    requestPayload: IRequestPayload,
     response: Response
   ): Promise<McpResult> {
     const htmlContent = await response.text();
@@ -89,7 +89,7 @@ export class Fetcher {
    * Process response as JSON
    */
   private static async processAsJson(
-    requestPayload: RequestPayload,
+    requestPayload: IRequestPayload,
     response: Response
   ): Promise<McpResult> {
     const jsonData = await response.json();
@@ -108,7 +108,7 @@ export class Fetcher {
    * Process response as raw HTML
    */
   private static async processAsHtml(
-    requestPayload: RequestPayload,
+    requestPayload: IRequestPayload,
     response: Response
   ): Promise<McpResult> {
     const htmlContent = await response.text();
@@ -138,10 +138,10 @@ export class Fetcher {
    */
   private static async tryProcessFormat(
     processor: (
-      payload: RequestPayload,
+      payload: IRequestPayload,
       response: Response
     ) => Promise<McpResult>,
-    requestPayload: RequestPayload,
+    requestPayload: IRequestPayload,
     response: Response
   ): Promise<McpResult | null> {
     try {
@@ -162,7 +162,7 @@ export class Fetcher {
    * Main fetch method that automatically detects the best format
    * Priority: Text -> JSON -> HTML (fallback)
    */
-  static async doFetch(requestPayload: RequestPayload): Promise<McpResult> {
+  static async doFetch(requestPayload: IRequestPayload): Promise<McpResult> {
     try {
       const response = await this.performHttpRequest(requestPayload);
 

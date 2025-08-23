@@ -54,7 +54,7 @@ export class JiraResponseBuilder {
     // Add comments if available (latest 20)
     if (ticket.hasComments) {
       const commentItems = ticket.comments.map(
-        comment => `${comment.author} (${comment.created}):\n${comment.body}`
+        comment => `${comment.author.displayName} (${comment.created}):\n${comment.body}`
       );
       this._responseBuilder.addNumberedList("Recent Comments (Latest 20)", commentItems);
     }
