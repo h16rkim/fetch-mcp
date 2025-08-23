@@ -614,3 +614,236 @@
 - **Breaking existing APIs**: Changing public interfaces without maintaining compatibility
 - **Ignoring compilation errors**: Proceeding with refactoring when TypeScript shows errors
 - **Inconsistent application**: Using different patterns for similar classes
+
+### 16. Domain Class Separation & Nested Object Refactoring (2025-08-23 Update)
+
+#### ✅ What to Do
+- **Extract nested object literals into separate Domain Classes**
+  ```typescript
+  // Good: Separate domain classes for nested structures
+  export class ConfluenceSpace {
+    private _key: string;
+    private _name: string;
+    
+    constructor(data: { key?: string; name?: string }) {
+      this._key = data.key || "Unknown space";
+      this._name = data.name || "Unknown space name";
+    }
+    
+    get displayInfo(): string {
+      return `${this._name} (${this._key})`;
+    }
+  }
+  
+  export class ConfluencePage {
+    private _space?: ConfluenceSpace;
+    
+    constructor(data: IConfluenceApiResponse) {
+      this._space = data.space ? new ConfluenceSpace(data.space) : undefined;
+    }
+  }
+  
+  // Bad: Object literal types in main class
+  export class ConfluencePage {
+    private _space?: {
+      key?: string;
+      name?: string;
+    };
+  }
+  ```
+
+- **Create hierarchical domain class relationships**
+  ```typescript
+  // Good: Compose domain classes hierarchically
+  export class ConfluenceVersion {
+    private _by?: ConfluenceAuthor;
+    
+    constructor(data: { by?: { publicName?: string } }) {
+      this._by = data.by ? new ConfluenceAuthor(data.by) : undefined;
+    }
+    
+    get authorName(): string {
+      return this._by?.publicName || "Unknown author";
+    }
+  }
+  
+  export class ConfluenceBody {
+    private _exportView?: ConfluenceExportView;
+    
+    get htmlContent(): string {
+      return this._exportView?.htmlContent || "No content";
+    }
+  }
+  ```
+
+- **Add business logic to domain classes**
+  ```typescript
+  // Good: Each domain class contains relevant business logic
+  export class ConfluenceExportView {
+    private _value: string;
+    
+    get hasContent(): boolean {
+      return this._value !== "No content" && this._value.trim().length > 0;
+    }
+    
+    get contentLength(): number {
+      return this._value.length;
+    }
+    
+    get shortContent(): string {
+      const maxLength = 200;
+      if (this._value.length <= maxLength) {
+        return this._value;
+      }
+      return this._value.substring(0, maxLength) + "...";
+    }
+  }
+  ```
+
+- **Delegate operations to appropriate domain classes**
+  ```typescript
+  // Good: Main class delegates to domain classes
+  export class ConfluencePage {
+    private _body?: ConfluenceBody;
+    
+    get hasContent(): boolean {
+      return this._body?.hasContent || false;
+    }
+    
+    get contentLength(): number {
+      return this._body?.contentLength || 0;
+    }
+    
+    get pageInfo(): PageInfo {
+      return {
+        title: this._title,
+        space: this._space?.displayInfo || "Unknown space",
+        author: this._version?.authorName || "Unknown author",
+        hasContent: this.hasContent,
+        contentLength: this.contentLength,
+      };
+    }
+  }
+  ```
+
+#### ✅ Benefits of Domain Class Separation
+- **Clear Responsibility Separation**: Each domain class manages its own data and business logic
+- **Enhanced Reusability**: Individual domain classes can be reused in other contexts
+- **Improved Type Safety**: Each class has explicit types with compile-time validation
+- **Better Extensibility**: Easy to add new business logic to specific domain classes
+- **Simplified Testing**: Each domain class can be tested independently
+- **Reduced Complexity**: Main class becomes simpler by delegating to domain classes
+- **Better IDE Support**: IntelliSense works better with explicit class structures
+
+#### ❌ What to Avoid
+- **Keeping complex nested object literals**
+  ```typescript
+  // Bad: Complex nested object literal types
+  export class ComplexModel {
+    private _nested?: {
+      level1?: {
+        level2?: {
+          level3?: {
+            value?: string;
+            metadata?: {
+              created?: string;
+              author?: {
+                name?: string;
+                email?: string;
+              };
+            };
+          };
+        };
+      };
+    };
+  }
+  ```
+
+- **Mixing data access patterns**
+  ```typescript
+  // Bad: Inconsistent access patterns
+  export class MixedModel {
+    private _simpleField: string;
+    private _complexData?: {
+      nested?: {
+        value?: string;
+      };
+    };
+    
+    // Inconsistent - some fields have domain classes, others don't
+  }
+  ```
+
+- **Creating domain classes without business logic**
+  ```typescript
+  // Bad: Domain class that only holds data without logic
+  export class EmptyDomain {
+    private _value: string;
+    
+    constructor(data: { value?: string }) {
+      this._value = data.value || "";
+    }
+    
+    get value(): string {
+      return this._value;
+    }
+    
+    // No business logic - this should just be a simple property
+  }
+  ```
+
+### 17. Consistent Architecture Application (2025-08-23 Update)
+
+#### ✅ What to Do
+- **Apply patterns consistently across all services**
+  ```typescript
+  // Good: All services follow the same architectural patterns
+  // GitHub models: Explicit properties + Domain classes for complex nested objects
+  // Slack models: Explicit properties + Domain classes for complex nested objects  
+  // Atlassian models: Explicit properties + Domain classes for complex nested objects
+  ```
+
+- **Handle inline type definitions appropriately**
+  ```typescript
+  // Good: Work with existing type definitions when they're inline
+  export class JiraTicket {
+    private _key: string;
+    private _fields?: {
+      summary?: string;
+      assignee?: {
+        displayName?: string;
+      };
+      // Use inline types when they're already defined this way
+    };
+  }
+  
+  // But extract to domain classes when complexity warrants it
+  export class ConfluencePage {
+    private _space?: ConfluenceSpace; // Extracted to domain class
+    private _version?: ConfluenceVersion; // Extracted to domain class
+  }
+  ```
+
+- **Maintain backward compatibility during refactoring**
+  ```typescript
+  // Good: Ensure get data() method still returns expected interface
+  get data(): IConfluenceApiResponse {
+    return {
+      title: this._title,
+      space: this._space?.data, // Domain class provides data() method
+      version: this._version?.data,
+      body: this._body?.data
+    };
+  }
+  ```
+
+#### ✅ Decision Criteria for Domain Class Extraction
+1. **Complexity**: If nested object has 3+ properties or 2+ levels of nesting
+2. **Business Logic**: If nested object needs its own business methods
+3. **Reusability**: If nested object structure is used in multiple places
+4. **Clarity**: If extraction would make the main class significantly clearer
+
+#### ❌ What to Avoid
+- **Over-engineering simple structures**: Don't create domain classes for simple 1-2 property objects
+- **Inconsistent extraction**: Don't extract some nested objects but leave others as literals
+- **Breaking existing interfaces**: Ensure refactored classes still implement expected interfaces

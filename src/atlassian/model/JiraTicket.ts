@@ -1,58 +1,101 @@
 import { IJiraApiResponse } from "../AtlassianTypes.js";
 
 export class JiraTicket {
-  private _data: IJiraApiResponse;
+  private _key: string;
+  private _fields?: {
+    summary?: string;
+    assignee?: {
+      displayName?: string;
+    };
+    status?: {
+      name?: string;
+    };
+    priority?: {
+      name?: string;
+    };
+    issuetype?: {
+      name?: string;
+    };
+    reporter?: {
+      displayName?: string;
+    };
+    created?: string;
+    updated?: string;
+    description?: any;
+    subtasks?: Array<{
+      key?: string;
+      fields?: {
+        summary?: string;
+        status?: {
+          name?: string;
+        };
+      };
+    }>;
+    comment?: {
+      comments?: Array<{
+        author?: {
+          displayName?: string;
+        };
+        body?: any;
+        created?: string;
+      }>;
+    };
+  };
 
   constructor(data: IJiraApiResponse) {
-    this._data = data;
+    this._key = data.key || "Unknown key";
+    this._fields = data.fields;
   }
 
   get data(): IJiraApiResponse {
-    return this._data;
+    return {
+      key: this._key,
+      fields: this._fields
+    };
   }
 
   get key(): string {
-    return this._data.key || "Unknown key";
+    return this._key;
   }
 
   get summary(): string {
-    return this._data.fields?.summary || "No summary";
+    return this._fields?.summary || "No summary";
   }
 
   get assignee(): string {
-    return this._data.fields?.assignee?.displayName || "Unassigned";
+    return this._fields?.assignee?.displayName || "Unassigned";
   }
 
   get status(): string {
-    return this._data.fields?.status?.name || "Unknown status";
+    return this._fields?.status?.name || "Unknown status";
   }
 
   get priority(): string {
-    return this._data.fields?.priority?.name || "Unknown priority";
+    return this._fields?.priority?.name || "Unknown priority";
   }
 
   get issueType(): string {
-    return this._data.fields?.issuetype?.name || "Unknown type";
+    return this._fields?.issuetype?.name || "Unknown type";
   }
 
   get reporter(): string {
-    return this._data.fields?.reporter?.displayName || "Unknown reporter";
+    return this._fields?.reporter?.displayName || "Unknown reporter";
   }
 
   get created(): string {
-    return this._data.fields?.created || "Unknown";
+    return this._fields?.created || "Unknown";
   }
 
   get updated(): string {
-    return this._data.fields?.updated || "Unknown";
+    return this._fields?.updated || "Unknown";
   }
 
   get description(): string {
-    if (!this._data.fields?.description) {
+    if (!this._fields?.description) {
       return "No description";
     }
 
-    const desc = this._data.fields.description;
+    const desc = this._fields.description;
     if (typeof desc === "string") {
       return desc;
     } else if (desc.content) {
@@ -64,13 +107,13 @@ export class JiraTicket {
 
   get subtasks(): Array<{ key: string; summary: string; status: string }> {
     if (
-      !this._data.fields?.subtasks ||
-      this._data.fields.subtasks.length === 0
+      !this._fields?.subtasks ||
+      this._fields.subtasks.length === 0
     ) {
       return [];
     }
 
-    return this._data.fields.subtasks.map(subtask => ({
+    return this._fields.subtasks.map((subtask: any) => ({
       key: subtask.key || "Unknown key",
       summary: subtask.fields?.summary || "No summary",
       status: subtask.fields?.status?.name || "Unknown status",
@@ -79,14 +122,14 @@ export class JiraTicket {
 
   get comments(): Array<{ author: string; body: string; created: string }> {
     if (
-      !this._data.fields?.comment?.comments ||
-      this._data.fields.comment.comments.length === 0
+      !this._fields?.comment?.comments ||
+      this._fields.comment.comments.length === 0
     ) {
       return [];
     }
 
     // Get latest 20 comments
-    return this._data.fields.comment.comments.slice(-20).map(comment => ({
+    return this._fields.comment.comments.slice(-20).map((comment: any) => ({
       author: comment.author?.displayName || "Unknown author",
       body:
         typeof comment.body === "string"
