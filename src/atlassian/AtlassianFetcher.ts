@@ -9,6 +9,8 @@ import { Constants } from "../constants.js";
 import { ConfluencePage } from "./model/ConfluencePage.js";
 import { JiraTicket } from "./model/JiraTicket.js";
 import { ResponseBuilder } from "../ResponseBuilder.js";
+import { JiraResponseBuilder } from "./JiraResponseBuilder.js";
+import { ConfluenceResponseBuilder } from "./ConfluenceResponseBuilder.js";
 import { McpResult } from "../McpModels.js";
 
 export class AtlassianFetcher {
@@ -124,14 +126,14 @@ export class AtlassianFetcher {
     maxLength?: number
   ): string {
     const normalizedText = this.htmlToPlainText(page.htmlContent);
-
-    return new ResponseBuilder()
-      .addField("Title", page.title)
-      .addField("Space", `${page.spaceKey} (${page.spaceName})`)
-      .addField("Author", page.authorName)
-      .addField("URL", url)
-      .addSection("Content", normalizedText)
-      .build(maxLength);
+    const responseBuilder = new ConfluenceResponseBuilder();
+    
+    return responseBuilder.generateConfluencePageSummary(
+      page,
+      url,
+      normalizedText,
+      maxLength
+    );
   }
 
   /**
@@ -142,36 +144,13 @@ export class AtlassianFetcher {
     url: string,
     maxLength?: number
   ): string {
-    const builder = new ResponseBuilder()
-      .addField("Ticket", ticket.key)
-      .addField("Title", ticket.summary)
-      .addField("Type", ticket.issueType)
-      .addField("Status", ticket.status)
-      .addField("Priority", ticket.priority)
-      .addField("Assignee", ticket.assignee)
-      .addField("Reporter", ticket.reporter)
-      .addField("Created", ticket.created)
-      .addField("Updated", ticket.updated)
-      .addField("URL", url)
-      .addSection("Description", ticket.description);
-
-    // Add subtasks if available
-    if (ticket.hasSubtasks) {
-      const subtaskItems = ticket.subtasks.map(
-        subtask => `${subtask.key}: ${subtask.summary} (${subtask.status})`
-      );
-      builder.addNumberedList("Subtasks", subtaskItems);
-    }
-
-    // Add comments if available (latest 20)
-    if (ticket.hasComments) {
-      const commentItems = ticket.comments.map(
-        comment => `${comment.author} (${comment.created}):\n${comment.body}`
-      );
-      builder.addNumberedList("Recent Comments (Latest 20)", commentItems);
-    }
-
-    return builder.build(maxLength);
+    const responseBuilder = new JiraResponseBuilder();
+    
+    return responseBuilder.generateJiraTicketSummary(
+      ticket,
+      url,
+      maxLength
+    );
   }
 
   /**
